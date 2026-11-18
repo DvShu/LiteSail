@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LiteSail" parent="Theme.LiteSail.Base" />
+
+    <style name="Theme.LiteSail.Base" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#176B73</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#000000</item>
+    </style>
+
+    <style name="Widget.LiteSail.NavigationButton" parent="android:style/Widget.Material.Button.Borderless">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+</resources>
