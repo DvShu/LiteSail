@@ -1,107 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:focusableInTouchMode="true"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <include
+        android:id="@+id/browser"
+        layout="@layout/view_browser"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
+        android:layout_height="match_parent"
+        android:visibility="gone" />
 
-        <EditText
-            android:id="@+id/address"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/address_hint"
-            android:imeOptions="actionGo|flagNoExtractUi"
-            android:importantForAutofill="no"
-            android:inputType="textUri"
-            android:minHeight="48dp"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:saveEnabled="false" />
+    <include
+        android:id="@+id/start_page"
+        layout="@layout/view_start_page" />
 
-        <Button
-            android:id="@+id/go"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/go" />
-    </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/progress"
-        style="?android:attr/progressBarStyleHorizontal"
+    <include
+        android:id="@+id/search_page"
+        layout="@layout/view_search_page"
         android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:visibility="invisible" />
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <WebView
-            android:id="@+id/web_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <LinearLayout
-            android:id="@+id/page_error"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="?android:attr/windowBackground"
-            android:clickable="true"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite"
-                android:gravity="center"
-                android:text="@string/page_load_error" />
-
-            <Button
-                android:id="@+id/retry"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/retry" />
-        </LinearLayout>
-    </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/back"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:enabled="false"
-            android:text="@string/back" />
-
-        <Button
-            android:id="@+id/forward"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:enabled="false"
-            android:text="@string/forward" />
-
-        <Button
-            android:id="@+id/home"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:text="@string/home" />
-
-        <Button
-            android:id="@+id/reload"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:text="@string/refresh" />
-    </LinearLayout>
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</FrameLayout>

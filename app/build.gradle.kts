@@ -1,9 +1,11 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
+
+val releaseKeystore = providers.environmentVariable("LITESAIL_RELEASE_KEYSTORE")
+val releaseStorePassword = providers.environmentVariable("LITESAIL_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = providers.environmentVariable("LITESAIL_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = providers.environmentVariable("LITESAIL_RELEASE_KEY_PASSWORD").orElse(releaseStorePassword)
 
 android {
     namespace = "com.joel.litesail"
@@ -13,16 +15,30 @@ android {
         applicationId = "com.joel.litesail"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.0.1"
     }
 
     buildFeatures {
         viewBinding = true
     }
 
+    val releaseSigning = releaseKeystore.orNull?.let { path ->
+        signingConfigs.create("release") {
+            storeFile = file(path)
+            storePassword = releaseStorePassword.orNull
+            keyAlias = releaseKeyAlias.orNull
+            keyPassword = releaseKeyPassword.orNull
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
+
         release {
+            signingConfig = releaseSigning
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
@@ -32,12 +48,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

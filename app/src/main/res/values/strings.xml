@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">轻舟浏览器</string>
+    <string name="start_search_hint">搜索或输入网址</string>
+    <string name="search_action">搜索</string>
+    <string name="url_shortcut_https" translatable="false">https://</string>
+    <string name="url_shortcut_http" translatable="false">http://</string>
+    <string name="url_shortcut_www" translatable="false">www.</string>
+    <string name="url_shortcut_com" translatable="false">.com</string>
+    <string name="url_shortcut_cn" translatable="false">.cn</string>
+    <string name="url_shortcut_slash" translatable="false">/</string>
+    <string name="url_shortcut_dot" translatable="false">.</string>
+    <string name="insert_url_slash">插入斜杠</string>
+    <string name="insert_url_dot">插入点号</string>
+    <string name="search_history">搜索历史</string>
+    <string name="empty_search_history">暂无搜索历史</string>
+    <string name="delete_search_history">删除搜索历史记录</string>
+    <string name="delete_search_history_entry">删除“%1$s”</string>
+    <string name="clear_search_history">清空</string>
+    <string name="confirm_clear_search_history">清空搜索历史？</string>
+    <string name="cancel">取消</string>
+    <string name="invalid_search_input">请输入搜索词或有效网址</string>
     <string name="address_hint">输入网址或搜索词</string>
     <string name="go">打开</string>
     <string name="back">后退</string>

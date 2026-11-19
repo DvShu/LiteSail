@@ -20,6 +20,10 @@ class BrowserAddressTest {
 
     @Test fun searchInputIsEncoded() {
         assertEquals("https://www.baidu.com/s?wd=%E8%BD%BB%E8%88%9F+%26+Android", BrowserAddress.resolve("轻舟 & Android"))
+        assertEquals(
+            "https://www.bing.com/search?q=%E8%BD%BB%E8%88%9F+%26+Android",
+            BrowserAddress.resolve("轻舟 & Android", BrowserAddress.BING_SEARCH_URL_PREFIX)
+        )
     }
 
     @Test fun nonWebAndMalformedExplicitUrlsAreRejected() {

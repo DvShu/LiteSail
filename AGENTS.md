@@ -12,6 +12,8 @@
 
 用户说「打调试包」时，只用 Gradle Wrapper 执行 `:app:assembleDebug`，不提交或推送代码，也不构建 Release 包。成功后提供 `app/build/outputs/apk/debug/app-debug.apk`；失败则报告原因，不把旧 APK 当成本次产物。
 
+调试 APK 的应用 ID 为 `com.joel.litesail.debug`，可与应用 ID 为 `com.joel.litesail` 的线上版同时安装。
+
 ## 发布版本
 
 仅在用户明确要求发布版本时执行；讨论或修改本约定不触发发布。以当前 `app/build.gradle.kts` 中的 `versionName = "x.y.z"` 为基准，按用户约定（不是按术语惯例）升级：

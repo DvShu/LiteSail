@@ -5,10 +5,11 @@ import java.net.URLEncoder
 
 internal object BrowserAddress {
     const val HOME = "https://www.baidu.com/"
+    const val BING_SEARCH_URL_PREFIX = "https://www.bing.com/search?q="
     private val scheme = Regex("^[a-z][a-z0-9+.-]*:", RegexOption.IGNORE_CASE)
     private val hostWithPort = Regex("^[^/:?#\\s]+:[0-9]+(?:[/?#]|$)")
 
-    fun resolve(input: String): String? {
+    fun resolve(input: String, searchUrlPrefix: String = "https://www.baidu.com/s?wd="): String? {
         val value = input.trim()
         if (value.isEmpty()) return null
 
@@ -25,7 +26,7 @@ internal object BrowserAddress {
         if (host.equals("localhost", ignoreCase = true) || '.' in host || host.startsWith('[')) {
             return candidate?.toASCIIString()
         }
-        return "https://www.baidu.com/s?wd=" + URLEncoder.encode(value, "UTF-8")
+        return searchUrlPrefix + URLEncoder.encode(value, "UTF-8")
     }
 
     fun isWebScheme(scheme: String?): Boolean = scheme == "http" || scheme == "https"
