@@ -1,4 +1,4 @@
-package com.joel.litesail
+package com.joel.litesail.search
 
 import android.content.Context
 import org.json.JSONArray

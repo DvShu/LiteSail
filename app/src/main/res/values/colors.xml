@@ -9,4 +9,11 @@
     <color name="start_page_search_ripple">#30176B73</color>
     <color name="start_page_accent">#176B73</color>
     <color name="start_page_on_accent">#FFFFFF</color>
+    <color name="scanner_background">#101917</color>
+    <color name="scanner_foreground">#FFFFFF</color>
+    <color name="scanner_guide">#BFEEDC</color>
+    <color name="scanner_scrim">#99101917</color>
+    <color name="scanner_control">#20312B</color>
+    <color name="scanner_control_active">#285143</color>
+    <color name="scanner_control_ripple">#30FFFFFF</color>
 </resources>

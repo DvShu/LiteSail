@@ -1,12 +1,18 @@
-package com.joel.litesail
+package com.joel.litesail.main
 
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.Selection
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -19,28 +25,40 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import com.joel.litesail.R
+import com.joel.litesail.browser.BrowserAddress
 import com.joel.litesail.databinding.ActivityMainBinding
 import com.joel.litesail.databinding.ViewBrowserBinding
+import com.joel.litesail.databinding.ViewQrResultBinding
 import com.joel.litesail.databinding.ViewSearchPageBinding
 import com.joel.litesail.databinding.ViewStartPageBinding
+import com.joel.litesail.scan.ui.QrScanActivity
+import com.joel.litesail.search.SearchHistory
+import com.joel.litesail.search.SearchHistoryAdapter
 
 private const val ACTIVE_PAGE = "active_page"
 private const val BROWSER_URL = "browser_url"
+private const val SEARCH_FROM_BROWSER = "search_from_browser"
 private const val START_PAGE_VISIBLE = "start_page_visible"
+private const val QR_CONTENT = "qr_content"
+private const val QR_REQUEST = 101
 private val HTTP_PREFIX = Regex("^\\s*https?://", RegexOption.IGNORE_CASE)
 
 class MainActivity : Activity() {
-    private enum class Page { START, SEARCH, BROWSER }
+    private enum class Page { START, SEARCH, BROWSER, QR_RESULT }
 
     private lateinit var binding: ViewBrowserBinding
     private lateinit var startPage: ViewStartPageBinding
     private lateinit var searchPage: ViewSearchPageBinding
+    private lateinit var qrResultPage: ViewQrResultBinding
     private lateinit var searchHistory: SearchHistory
     private lateinit var historyAdapter: SearchHistoryAdapter
     private var activePage = Page.START
-    private var requestedUrl: String? = null
-    private var loading = false
+    private var browserUrl: String? = null
+    private var siteIcon: Bitmap? = null
+    private var searchFromBrowser = false
     private var failedUrl: String? = null
+    private var scannedContent: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +66,7 @@ class MainActivity : Activity() {
         binding = layout.browser
         startPage = layout.startPage
         searchPage = layout.searchPage
+        qrResultPage = layout.qrResult
         searchHistory = SearchHistory(this)
         setContentView(layout.root)
         if (Build.VERSION.SDK_INT >= 35) {
@@ -57,6 +76,7 @@ class MainActivity : Activity() {
                 val browserArea = insets.getInsets(systemAreas or WindowInsets.Type.ime())
                 startPage.root.setPadding(homeArea.left, homeArea.top, homeArea.right, homeArea.bottom)
                 searchPage.root.setPadding(browserArea.left, browserArea.top, browserArea.right, browserArea.bottom)
+                qrResultPage.root.setPadding(homeArea.left, homeArea.top, homeArea.right, homeArea.bottom)
                 binding.root.setPadding(browserArea.left, browserArea.top, browserArea.right, browserArea.bottom)
                 insets
             }
@@ -64,15 +84,25 @@ class MainActivity : Activity() {
         configureWebView()
         bindControls()
         bindSearchControls()
+        qrResultPage.closeQrResult.setOnClickListener { showStartPage() }
         val browserRestored = savedInstanceState?.let(binding.webView::restoreState) != null
-        requestedUrl = savedInstanceState?.getString(BROWSER_URL)
+        val savedBrowserUrl = savedInstanceState?.getString(BROWSER_URL)
         val legacyBrowserVisible = savedInstanceState?.getBoolean(START_PAGE_VISIBLE, !browserRestored) == false
         val pageName = savedInstanceState?.getString(ACTIVE_PAGE)
         val page = Page.entries.firstOrNull { it.name == pageName }
             ?: if (legacyBrowserVisible) Page.BROWSER else Page.START
-        if (page == Page.SEARCH) showSearchPage() else showPage(page)
-        if (page == Page.BROWSER && !browserRestored) open(requestedUrl ?: BrowserAddress.HOME)
-        updateAddress(binding.webView.url)
+        val restoreBrowserSearch = page == Page.SEARCH && savedInstanceState?.getBoolean(SEARCH_FROM_BROWSER) == true
+        if (!browserRestored && (page == Page.BROWSER || restoreBrowserSearch)) {
+            loadPage(savedBrowserUrl ?: BrowserAddress.HOME)
+        } else {
+            (savedBrowserUrl ?: binding.webView.url)?.let(::updateAddress)
+            if (browserRestored) restoreSiteIcon(binding.webView)
+        }
+        when (page) {
+            Page.SEARCH -> showSearchPage(fromBrowser = restoreBrowserSearch)
+            Page.QR_RESULT -> savedInstanceState?.getString(QR_CONTENT)?.let(::showQrResult) ?: showStartPage()
+            else -> showPage(page)
+        }
         updateNavigationButtons()
     }
 
@@ -91,15 +121,18 @@ class MainActivity : Activity() {
         }
         webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                if (BrowserAddress.isWebScheme(request.url.scheme)) return false
+                val scheme = request.url.scheme
+                if (BrowserAddress.isWebScheme(scheme)) return false
                 if (request.isForMainFrame) {
-                    Toast.makeText(this@MainActivity, R.string.unsupported_link, Toast.LENGTH_SHORT).show()
+                    val sourceHost = view.url?.let { Uri.parse(it).host } ?: "-"
+                    Log.i("LiteSail", "Blocked navigation scheme=${scheme ?: "-"} sourceHost=$sourceHost")
                 }
                 return true
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 failedUrl = null
+                setSiteIcon(null)
                 binding.pageError.visibility = View.GONE
                 binding.progress.progress = 0
                 setLoading(true)
@@ -109,19 +142,23 @@ class MainActivity : Activity() {
 
             override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
                 updateAddress(url)
+                restoreSiteIcon(view)
                 updateNavigationButtons()
             }
 
             override fun onPageFinished(view: WebView, url: String) {
                 updateAddress(failedUrl ?: view.url ?: url)
+                restoreSiteIcon(view)
                 updateNavigationButtons()
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (!request.isForMainFrame || !BrowserAddress.isWebScheme(request.url.scheme)) return
-                failedUrl = request.url.toString()
+                val url = request.url.toString()
+                failedUrl = url
+                setSiteIcon(null)
                 binding.pageError.visibility = View.VISIBLE
-                updateAddress(failedUrl)
+                updateAddress(url)
                 updateNavigationButtons()
                 setLoading(false)
             }
@@ -136,36 +173,48 @@ class MainActivity : Activity() {
                 if (binding.root.visibility == View.VISIBLE) {
                     this@MainActivity.title = title?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
                 }
+                refreshCurrentPageCard()
+            }
+
+            override fun onReceivedIcon(view: WebView, icon: Bitmap) {
+                val url = view.url ?: return
+                if (failedUrl == null && url == browserUrl) setSiteIcon(icon)
             }
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun bindControls() = with(binding) {
         startPage.search.setOnClickListener { showSearchPage() }
-        go.setOnClickListener { submitAddress() }
-        address.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId != EditorInfo.IME_ACTION_GO) return@setOnEditorActionListener false
-            submitAddress()
-            true
+        startPage.scanQr.setOnClickListener {
+            startActivityForResult(Intent(this@MainActivity, QrScanActivity::class.java), QR_REQUEST)
+        }
+        addressBar.setOnClickListener {
+            clearSearchInput()
+            showSearchPage(fromBrowser = true)
         }
         back.setOnClickListener { if (webView.canGoBack()) webView.goBack() }
         forward.setOnClickListener { if (webView.canGoForward()) webView.goForward() }
         home.setOnClickListener { showStartPage() }
         retry.setOnClickListener { failedUrl?.let(::open) }
-        reload.setOnClickListener {
-            if (loading) {
-                webView.stopLoading()
-                setLoading(false)
-                updateNavigationButtons()
-            } else {
-                failedUrl?.let(::open) ?: webView.reload()
-            }
-        }
+        reload.setOnClickListener { failedUrl?.let(::open) ?: webView.reload() }
     }
 
     private fun bindSearchControls() = with(searchPage) {
-        closeSearch.setOnClickListener { showStartPage() }
+        closeSearch.setOnClickListener { closeSearchPage() }
         submitSearch.setOnClickListener { submitQuery(query.text.toString()) }
+        copyPageLink.setOnClickListener {
+            browserUrl?.let { copyText(R.string.page_link, it, R.string.page_link_copied) }
+        }
+        editPageLink.setOnClickListener {
+            val url = browserUrl ?: return@setOnClickListener
+            query.error = null
+            query.setText(url)
+            query.setSelection(query.length())
+            focusSearchInput()
+        }
+        shortcutCursorLeft.setOnClickListener { moveSearchCursor(towardLeft = true) }
+        shortcutCursorRight.setOnClickListener { moveSearchCursor(towardLeft = false) }
         listOf(shortcutHttps, shortcutHttp).forEach { shortcut ->
             shortcut.setOnClickListener { setSearchProtocol(shortcut.text.toString()) }
         }
@@ -192,10 +241,36 @@ class MainActivity : Activity() {
         clearHistory.setOnClickListener { confirmClearSearchHistory() }
     }
 
-    private fun showSearchPage() {
+    private fun showSearchPage(fromBrowser: Boolean = false) {
+        searchFromBrowser = fromBrowser
         refreshSearchHistory()
         showPage(Page.SEARCH)
+        refreshCurrentPageCard()
         focusSearchInput()
+    }
+
+    private fun closeSearchPage() {
+        if (searchFromBrowser) clearSearchInput()
+        dismissKeyboard()
+        showPage(if (searchFromBrowser) Page.BROWSER else Page.START)
+    }
+
+    private fun clearSearchInput() = with(searchPage.query) {
+        error = null
+        text.clear()
+    }
+
+    private fun refreshCurrentPageCard() {
+        if (activePage != Page.SEARCH) return
+        val url = browserUrl.takeIf { searchFromBrowser }
+        searchPage.currentPageCard.visibility = if (url == null) View.GONE else View.VISIBLE
+        if (url == null) return
+
+        val pageTitle = binding.webView.title?.takeIf {
+            failedUrl == null && url == binding.webView.url && it.isNotBlank()
+        }
+        searchPage.currentPageTitle.text = pageTitle ?: getString(R.string.current_web_page)
+        searchPage.currentPageUrl.text = url
     }
 
     private fun refreshSearchHistory() {
@@ -236,6 +311,17 @@ class MainActivity : Activity() {
         query.setSelection((cursor - prefixLength + protocol.length).coerceIn(protocol.length, input.length))
     }
 
+    private fun moveSearchCursor(towardLeft: Boolean) {
+        focusSearchInput()
+        val query = searchPage.query
+        val layout = query.layout ?: return
+        if (towardLeft) {
+            Selection.moveLeft(query.text, layout)
+        } else {
+            Selection.moveRight(query.text, layout)
+        }
+    }
+
     private fun addWwwPrefix(prefix: String) {
         focusSearchInput()
         val query = searchPage.query
@@ -269,10 +355,51 @@ class MainActivity : Activity() {
         showPage(Page.START)
     }
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == QR_REQUEST && resultCode == RESULT_OK) {
+            data?.getStringExtra(QrScanActivity.RESULT_CONTENT)?.takeUnless(String::isBlank)?.let(::showQrResult)
+        }
+    }
+
+    private fun showQrResult(content: String) {
+        val address = BrowserAddress.scannedWebUrl(content)
+        val resultText = address ?: content
+        val resultType = if (address != null) R.string.qr_result_website else R.string.qr_result_text
+        scannedContent = content
+        with(qrResultPage) {
+            qrContentType.setText(resultType)
+            qrContent.text = resultText
+            qrContent.textDirection = if (address != null) View.TEXT_DIRECTION_LTR else View.TEXT_DIRECTION_FIRST_STRONG
+            qrContentScroll.scrollTo(0, 0)
+            qrCopyResult.setOnClickListener {
+                copyText(resultType, resultText, R.string.qr_result_copied)
+            }
+            qrResultAction.setText(if (address != null) R.string.qr_visit_now else R.string.qr_search_now)
+            qrResultAction.setOnClickListener {
+                if (address == null) searchHistory.record(content.trim())
+                open(address ?: BrowserAddress.bingSearchUrl(content))
+            }
+        }
+        showPage(Page.QR_RESULT)
+    }
+
+    private fun copyText(label: Int, text: String, confirmation: Int) {
+        val clipboard = getSystemService(ClipboardManager::class.java) ?: return
+        clipboard.setPrimaryClip(ClipData.newPlainText(getString(label), text))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, confirmation, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showPage(page: Page) {
         activePage = page
+        if (page != Page.SEARCH) searchFromBrowser = false
+        if (page != Page.QR_RESULT) scannedContent = null
         startPage.root.visibility = if (page == Page.START) View.VISIBLE else View.GONE
         searchPage.root.visibility = if (page == Page.SEARCH) View.VISIBLE else View.GONE
+        qrResultPage.root.visibility = if (page == Page.QR_RESULT) View.VISIBLE else View.GONE
         binding.root.visibility = if (page == Page.BROWSER) View.VISIBLE else View.GONE
         val pageTitle = if (page == Page.BROWSER) binding.webView.title else null
         title = pageTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
@@ -284,7 +411,7 @@ class MainActivity : Activity() {
         window.setBackgroundDrawableResource(
             when (page) {
                 Page.START -> R.drawable.start_page_surface
-                Page.SEARCH -> R.color.start_page_background
+                Page.SEARCH, Page.QR_RESULT -> R.color.start_page_background
                 Page.BROWSER -> android.R.color.white
             }
         )
@@ -303,17 +430,7 @@ class MainActivity : Activity() {
             return
         }
         searchHistory.record(query)
-        searchPage.query.error = null
-        searchPage.query.text.clear()
-        open(url)
-    }
-
-    private fun submitAddress() {
-        val url = BrowserAddress.resolve(binding.address.text.toString())
-        if (url == null) {
-            binding.address.error = getString(R.string.invalid_address)
-            return
-        }
+        clearSearchInput()
         open(url)
     }
 
@@ -321,8 +438,11 @@ class MainActivity : Activity() {
         dismissKeyboard()
         if (activePage != Page.BROWSER) showPage(Page.BROWSER)
         binding.root.requestFocus()
-        binding.address.error = null
-        requestedUrl = url
+        loadPage(url)
+    }
+
+    private fun loadPage(url: String) {
+        setSiteIcon(null)
         updateAddress(url)
         binding.webView.loadUrl(url)
     }
@@ -332,8 +452,29 @@ class MainActivity : Activity() {
             ?.hideSoftInputFromWindow(window.decorView.windowToken, 0)
     }
 
-    private fun updateAddress(url: String?) {
-        if (url != null && !binding.address.hasFocus()) binding.address.setText(url)
+    private fun updateAddress(url: String) {
+        if (browserUrl != url) setSiteIcon(null)
+        browserUrl = url
+        binding.address.text = url
+        refreshCurrentPageCard()
+    }
+
+    private fun restoreSiteIcon(view: WebView) {
+        if (siteIcon != null || failedUrl != null) return
+        val entry = view.copyBackForwardList().currentItem ?: return
+        if (entry.url == browserUrl) setSiteIcon(entry.favicon)
+    }
+
+    private fun setSiteIcon(icon: Bitmap?) {
+        if (siteIcon === icon) return
+        siteIcon = icon
+        if (icon == null) {
+            binding.addressIcon.setImageResource(R.drawable.ic_start_search)
+            searchPage.currentPageIcon.setImageResource(R.drawable.ic_start_search)
+        } else {
+            binding.addressIcon.setImageBitmap(icon)
+            searchPage.currentPageIcon.setImageBitmap(icon)
+        }
     }
 
     private fun updateNavigationButtons() = with(binding) {
@@ -342,16 +483,15 @@ class MainActivity : Activity() {
     }
 
     private fun setLoading(active: Boolean) {
-        loading = active
         binding.progress.visibility = if (active) View.VISIBLE else View.INVISIBLE
-        binding.reload.setText(if (active) R.string.stop else R.string.refresh)
     }
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         when {
             activePage == Page.START -> super.onBackPressed()
-            activePage == Page.SEARCH -> showStartPage()
+            activePage == Page.SEARCH -> closeSearchPage()
+            activePage == Page.QR_RESULT -> showStartPage()
             binding.webView.canGoBack() -> binding.webView.goBack()
             else -> showStartPage()
         }
@@ -360,9 +500,10 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(ACTIVE_PAGE, activePage.name)
-        val browserUrl = failedUrl ?: binding.webView.url ?: requestedUrl
-        if (browserUrl != null) {
-            outState.putString(BROWSER_URL, browserUrl)
+        outState.putBoolean(SEARCH_FROM_BROWSER, searchFromBrowser)
+        scannedContent?.let { outState.putString(QR_CONTENT, it) }
+        browserUrl?.let { url ->
+            outState.putString(BROWSER_URL, url)
             binding.webView.saveState(outState)
         }
     }

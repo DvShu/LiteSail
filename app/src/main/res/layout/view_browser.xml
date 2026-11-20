@@ -8,37 +8,82 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="8dp">
 
-        <EditText
-            android:id="@+id/address"
+        <LinearLayout
+            android:id="@+id/address_bar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/address_hint"
-            android:imeOptions="actionGo|flagNoExtractUi"
-            android:importantForAutofill="no"
-            android:inputType="textUri"
+            android:background="@drawable/browser_address_background"
+            android:baselineAligned="false"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
             android:minHeight="48dp"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:saveEnabled="false" />
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp">
 
-        <Button
-            android:id="@+id/go"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/go" />
+            <ImageView
+                android:id="@+id/address_icon"
+                android:layout_width="@dimen/site_icon_size"
+                android:layout_height="@dimen/site_icon_size"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_start_search" />
+
+            <TextView
+                android:id="@+id/address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:hint="@string/start_search_hint"
+                android:maxLines="1"
+                android:textColor="@color/start_page_brand_text"
+                android:textColorHint="@color/start_page_search_text"
+                android:textDirection="ltr"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/reload"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/browser_reload_background"
+            android:contentDescription="@string/refresh"
+            android:src="@drawable/ic_browser_reload"
+            android:tooltipText="@string/refresh" />
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progress"
-        style="?android:attr/progressBarStyleHorizontal"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:visibility="invisible" />
+        android:layout_height="2dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="bottom"
+            android:background="@color/start_page_search_border"
+            android:importantForAccessibility="no" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:maxHeight="2dp"
+            android:progressBackgroundTint="@android:color/transparent"
+            android:progressTint="@color/start_page_accent"
+            android:visibility="invisible" />
+    </FrameLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -99,9 +144,5 @@
             style="@style/Widget.LiteSail.NavigationButton"
             android:text="@string/home" />
 
-        <Button
-            android:id="@+id/reload"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:text="@string/refresh" />
     </LinearLayout>
 </LinearLayout>

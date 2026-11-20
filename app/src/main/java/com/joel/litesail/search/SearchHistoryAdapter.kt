@@ -1,10 +1,11 @@
-package com.joel.litesail
+package com.joel.litesail.search
 
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import com.joel.litesail.R
 import com.joel.litesail.databinding.ItemSearchHistoryBinding
 
 internal class SearchHistoryAdapter(

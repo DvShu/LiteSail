@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/qr_scan_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/scanner_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/close_qr_scan"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:padding="16dp"
+            android:src="@drawable/ic_search_back"
+            android:tint="@color/scanner_foreground" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/scan_qr"
+            android:textColor="@color/scanner_foreground"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <SurfaceView
+            android:id="@+id/qr_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no" />
+
+        <com.joel.litesail.scan.ui.QrViewfinder
+            android:id="@+id/qr_scan_guide"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:visibility="invisible" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/qr_scan_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/scanner_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/qr_scan_footer_horizontal_padding"
+        android:paddingVertical="@dimen/qr_scan_footer_vertical_padding">
+
+        <TextView
+            android:id="@+id/qr_scan_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center"
+            android:text="@string/qr_camera_opening"
+            android:textColor="@color/scanner_foreground"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/qr_scan_torch"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/qr_scan_control_background"
+            android:drawableStart="@drawable/ic_scan_light"
+            android:drawablePadding="8dp"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp"
+            android:text="@string/qr_torch_on"
+            android:textColor="@color/scanner_guide"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/qr_scan_retry"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/qr_scan_control_background"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp"
+            android:text="@string/retry"
+            android:textColor="@color/scanner_guide"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

@@ -32,28 +32,48 @@
             android:textColor="@color/start_page_brand_text"
             android:textSize="44sp" />
 
-        <Button
-            android:id="@+id/search"
-            style="?android:attr/borderlessButtonStyle"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
             android:background="@drawable/start_search_background"
-            android:drawableStart="@drawable/ic_start_search"
-            android:drawableEnd="@drawable/ic_start_arrow"
-            android:drawablePadding="12dp"
+            android:baselineAligned="false"
+            android:clipToOutline="true"
             android:elevation="2dp"
-            android:fontFamily="sans-serif"
-            android:gravity="start|center_vertical"
-            android:minHeight="64dp"
+            android:gravity="center_vertical"
             android:minWidth="344dp"
-            android:paddingStart="18dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="10dp"
-            android:text="@string/start_search_hint"
-            android:textAllCaps="false"
-            android:textColor="@color/start_page_search_text"
-            android:textSize="17sp" />
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/scan_qr"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:contentDescription="@string/scan_qr"
+                android:scaleType="center"
+                android:src="@drawable/ic_scan_qr" />
+
+            <Button
+                android:id="@+id/search"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:drawableEnd="@drawable/ic_start_arrow"
+                android:drawablePadding="12dp"
+                android:fontFamily="sans-serif"
+                android:gravity="start|center_vertical"
+                android:minWidth="0dp"
+                android:minHeight="64dp"
+                android:paddingStart="2dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="10dp"
+                android:text="@string/start_search_hint"
+                android:textAllCaps="false"
+                android:textColor="@color/start_page_search_text"
+                android:textSize="17sp" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -10,7 +10,7 @@
 
 ## 打调试包
 
-用户说「打调试包」时，只用 Gradle Wrapper 执行 `:app:assembleDebug`，不提交或推送代码，也不构建 Release 包。成功后提供 `app/build/outputs/apk/debug/app-debug.apk`；失败则报告原因，不把旧 APK 当成本次产物。
+用户说「打调试包」时，只用 Gradle Wrapper 执行 `:app:assembleDebug`，不提交或推送代码，也不构建 Release 包。成功后提供 `app/build/outputs/apk/debug/LiteSail-v<versionName>.apk`（文件名使用实际版本号）；失败则报告原因，不把旧 APK 当成本次产物。
 
 调试 APK 的应用 ID 为 `com.joel.litesail.debug`，可与应用 ID 为 `com.joel.litesail` 的线上版同时安装。
 
@@ -27,5 +27,5 @@
 1. 检查工作区、暂存区、当前分支和远程上游，检查本地及远程是否已存在目标 `vX.Y.Z` 标签；如有冲突、目标不明或缺少正式签名配置，先报告，勿覆盖标签或提交未验证的版本。签名密钥和密码只用本地配置，不写入 Git；不使用调试密钥签正式包。
 2. 更新 `app/build.gradle.kts` 的 `versionName` 和 `versionCode`（后者在旧值上 `+1`），同步文档中明确标注的当前版本。用 Gradle Wrapper 执行 `:app:testReleaseUnitTest :app:lintRelease :app:assembleRelease`，验证 Release APK 的签名、包名、版本名和版本号。构建或校验失败时停止，不提交、打标签或推送，也不把旧包或未签名包作为正式包交付。
 3. 提交本次版本改动和应纳入发布的代码（不提交 APK、签名材料或无关改动）；在发布提交上创建附注标签 `vX.Y.Z`，将当前分支推送到已配置的上游，并推送该标签。优先原子推送分支和标签；不强制推送，不覆盖已有标签，不自动发布其他标签。
-4. 提供可下载的签名 Release APK、提交哈希、标签及推送结果。根据上一发布标签以来的实际改动生成可复制的发布标题（例如 `LiteSail vX.Y.Z`）和 Markdown 更新内容；如果没有上一标签，就依据实际纳入的改动整理，不编造功能。
+4. 提供可下载的签名 Release APK（`app/build/outputs/apk/release/LiteSail-v<versionName>.apk`）、提交哈希、标签及推送结果。根据上一发布标签以来的实际改动生成可复制的发布标题（例如 `LiteSail vX.Y.Z`）和 Markdown 更新内容；如果没有上一标签，就依据实际纳入的改动整理，不编造功能。
 5. 输出可点击的 GitHub 发布编辑页链接，预选已推送的标签，例如 `https://github.com/DvShu/LiteSail/releases/new?tag=vX.Y.Z`。由用户在默认浏览器打开后手动填写标题、粘贴更新内容、上传 APK 并发布；不自动创建 GitHub Release 或上传附件。

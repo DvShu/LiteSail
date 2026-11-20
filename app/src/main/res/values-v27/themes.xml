@@ -4,4 +4,8 @@
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
     </style>
+
+    <style name="Theme.LiteSail.Scanner" parent="Theme.LiteSail.Scanner.Base">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
 </resources>

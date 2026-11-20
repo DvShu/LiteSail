@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="site_icon_size">22dp</dimen>
+    <dimen name="search_shortcut_gap">3dp</dimen>
+    <dimen name="qr_scan_footer_vertical_padding">16dp</dimen>
+    <dimen name="qr_scan_footer_horizontal_padding">24dp</dimen>
+</resources>

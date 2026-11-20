@@ -10,13 +10,25 @@ val releaseKeyPassword = providers.environmentVariable("LITESAIL_RELEASE_KEY_PAS
 android {
     namespace = "com.joel.litesail"
     compileSdk = 35
+    ndkVersion = "27.1.12297006"
 
     defaultConfig {
         applicationId = "com.joel.litesail"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.0.1"
+        versionCode = 3
+        versionName = "0.1.0"
+
+        ndk {
+            abiFilters.add("arm64-v8a")
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildFeatures {
@@ -48,6 +60,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val output = variant.outputs.single()
+        output.outputFileName.set(output.versionName.map { version -> "LiteSail-v$version.apk" })
     }
 }
 
