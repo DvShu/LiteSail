@@ -4,6 +4,19 @@
 
     <style name="Theme.LiteSail.Scanner" parent="Theme.LiteSail.Scanner.Base" />
 
+    <style name="Theme.LiteSail.BrowserMenu" parent="android:style/Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.48</item>
+        <item name="android:windowAnimationStyle">@style/Animation.LiteSail.BrowserMenu</item>
+        <item name="android:colorAccent">@color/start_page_accent</item>
+    </style>
+
+    <style name="Animation.LiteSail.BrowserMenu" parent="android:style/Animation">
+        <item name="android:windowEnterAnimation">@anim/browser_menu_enter</item>
+        <item name="android:windowExitAnimation">@anim/browser_menu_exit</item>
+    </style>
+
     <style name="Theme.LiteSail.Scanner.Base" parent="Theme.LiteSail.Base">
         <item name="android:windowBackground">@color/scanner_background</item>
         <item name="android:statusBarColor">@color/scanner_background</item>
@@ -19,11 +32,27 @@
         <item name="android:navigationBarColor">#000000</item>
     </style>
 
-    <style name="Widget.LiteSail.NavigationButton" parent="android:style/Widget.Material.Button.Borderless">
+    <style name="Widget.LiteSail.ToolbarButton" parent="android:style/Widget.Material.ImageButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">50dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:minWidth">56dp</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:scaleType">center</item>
+        <item name="android:tint">@color/browser_toolbar_icon</item>
+    </style>
+
+    <style name="Widget.LiteSail.BrowserMenuItem" parent="android:style/Widget.Material.TextView">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingHorizontal">2dp</item>
+        <item name="android:paddingVertical">10dp</item>
+        <item name="android:textColor">@color/start_page_brand_text</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="Widget.LiteSail.QrResultButton" parent="android:style/Widget.Material.Button.Borderless">

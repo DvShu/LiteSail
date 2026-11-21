@@ -17,7 +17,7 @@ import android.os.SystemClock
 import android.util.Size
 import android.view.Surface
 import android.view.SurfaceHolder
-import com.joel.litesail.scan.decoder.QuircDecoder
+import com.joel.litesail.scan.decoder.QrDecoder
 import kotlin.math.abs
 
 /** The camera and session are managed on the main thread. Frames are decoded on a worker. */
@@ -42,8 +42,7 @@ internal class QrCamera(
         @Volatile var active = true
 
         // Only the analysis thread accesses the decoder and frame state.
-        var centerDecoder: QuircDecoder? = null
-        var fullDecoder: QuircDecoder? = null
+        val decoder = QrDecoder()
         var nextFrameAt = 0L
         var nextFullFrameAt = 0L
         var resultFound = false
@@ -194,13 +193,10 @@ internal class QrCamera(
 
             val side = centerSize
             if (side in 1 until minOf(image.width, image.height) && now < capture.nextFullFrameAt) {
-                // Keep a separate buffer so alternating frame sizes does not reallocate it.
-                val decoder = capture.centerDecoder ?: QuircDecoder().also { capture.centerDecoder = it }
-                decoder.decode(image, side)
+                capture.decoder.decode(image, side)
             } else {
                 capture.nextFullFrameAt = now + FULL_FRAME_INTERVAL_MS
-                val decoder = capture.fullDecoder ?: QuircDecoder().also { capture.fullDecoder = it }
-                decoder.decode(image)
+                capture.decoder.decode(image)
             }
         }?.takeUnless(String::isBlank) ?: return
 
@@ -227,11 +223,7 @@ internal class QrCamera(
         capture.session?.close()
         capture.device?.close()
         capture.reader.setOnImageAvailableListener(null, null)
-        analysis.post {
-            capture.reader.close()
-            capture.centerDecoder?.close()
-            capture.fullDecoder?.close()
-        }
+        analysis.post { capture.reader.close() }
     }
 
     override fun close() {

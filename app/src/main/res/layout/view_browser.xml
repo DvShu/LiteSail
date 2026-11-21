@@ -30,13 +30,27 @@
             android:paddingHorizontal="14dp"
             android:paddingVertical="8dp">
 
-            <ImageView
-                android:id="@+id/address_icon"
+            <FrameLayout
                 android:layout_width="@dimen/site_icon_size"
-                android:layout_height="@dimen/site_icon_size"
-                android:importantForAccessibility="no"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_start_search" />
+                android:layout_height="@dimen/site_icon_size">
+
+                <ImageView
+                    android:id="@+id/address_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_start_search" />
+
+                <ImageView
+                    android:id="@+id/connection_badge"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="bottom|end"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/address"
@@ -86,14 +100,10 @@
     </FrameLayout>
 
     <FrameLayout
+        android:id="@+id/web_content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-
-        <WebView
-            android:id="@+id/web_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
 
         <LinearLayout
             android:id="@+id/page_error"
@@ -120,29 +130,4 @@
                 android:text="@string/retry" />
         </LinearLayout>
     </FrameLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/back"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:enabled="false"
-            android:text="@string/back" />
-
-        <Button
-            android:id="@+id/forward"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:enabled="false"
-            android:text="@string/forward" />
-
-        <Button
-            android:id="@+id/home"
-            style="@style/Widget.LiteSail.NavigationButton"
-            android:text="@string/home" />
-
-    </LinearLayout>
 </LinearLayout>

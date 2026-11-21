@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="end"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/browser_toolbar_background"
+    android:baselineAligned="false"
+    android:elevation="2dp"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/back"
+        style="@style/Widget.LiteSail.ToolbarButton"
+        android:contentDescription="@string/back"
+        android:enabled="false"
+        android:src="@drawable/ic_toolbar_back"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/forward"
+        style="@style/Widget.LiteSail.ToolbarButton"
+        android:contentDescription="@string/forward"
+        android:enabled="false"
+        android:src="@drawable/ic_toolbar_forward"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/home"
+        style="@style/Widget.LiteSail.ToolbarButton"
+        android:contentDescription="@string/home"
+        android:src="@drawable/ic_toolbar_home"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_weight="1"
+        android:minWidth="56dp">
+
+        <ImageButton
+            android:id="@+id/windows"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/browser_windows"
+            android:padding="0dp"
+            android:scaleType="center"
+            android:src="@drawable/ic_toolbar_window" />
+
+        <TextView
+            android:id="@+id/window_count"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:autoSizeMaxTextSize="11sp"
+            android:autoSizeMinTextSize="8sp"
+            android:autoSizeTextType="uniform"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:includeFontPadding="false"
+            android:textColor="@color/start_page_accent"
+            android:textSize="11sp" />
+    </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/open_menu"
+        style="@style/Widget.LiteSail.ToolbarButton"
+        android:contentDescription="@string/browser_menu"
+        android:src="@drawable/ic_toolbar_menu" />
+</LinearLayout>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/browser_menu_surface"
+    android:orientation="vertical"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="18dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/browser_window_manager"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/window_limit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="13sp" />
+
+        <ImageButton
+            android:id="@+id/close_window_manager"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/browser_window_manager_close"
+            android:scaleType="center"
+            android:src="@drawable/ic_close_window" />
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/window_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="4dp"
+        android:listSelector="@android:color/transparent"
+        android:overScrollMode="ifContentScrolls" />
+
+    <Button
+        android:id="@+id/add_window"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="4dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/qr_result_action_background"
+        android:fontFamily="sans-serif-medium"
+        android:minHeight="48dp"
+        android:stateListAnimator="@null"
+        android:text="@string/browser_window_new"
+        android:textAllCaps="false"
+        android:textColor="@color/start_page_on_accent" />
+</LinearLayout>
