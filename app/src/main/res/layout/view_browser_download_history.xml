@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/browser_menu_surface"
+    android:orientation="vertical"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="18dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/browser_menu_downloads"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="18sp" />
+
+        <ImageButton
+            android:id="@+id/close_downloads"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/download_history_close"
+            android:scaleType="center"
+            android:src="@drawable/ic_close_window" />
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/download_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="4dp"
+        android:overScrollMode="ifContentScrolls" />
+
+    <TextView
+        android:id="@+id/download_list_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
+        android:gravity="center"
+        android:paddingVertical="28dp"
+        android:text="@string/download_history_loading"
+        android:textColor="@color/start_page_search_text"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/system_downloads"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/browser_address_background"
+        android:minHeight="48dp"
+        android:text="@string/download_history_system"
+        android:textAllCaps="false"
+        android:textColor="@color/start_page_accent" />
+</LinearLayout>

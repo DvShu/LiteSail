@@ -1,0 +1,10 @@
+AdAway default blocklist
+Contributors include Kicelo and Dominik Schuermann.
+https://github.com/AdAway/adaway.github.io/commits/master/hosts.txt
+
+Source: https://github.com/AdAway/adaway.github.io/blob/7b5368f03b35ec74e3984a8958494c6b88aa256b/hosts.txt
+License: Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+
+LiteSail selects a subset of ad-serving hostnames and omits the loopback
+addresses and comments from the original hosts file.

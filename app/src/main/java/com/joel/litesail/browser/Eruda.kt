@@ -17,7 +17,7 @@ internal object Eruda {
                     if (current) current.setEnabled(false);
                     return;
                 }
-                if (location.href !== ${JSONObject.quote(url)} || document.readyState !== "complete") return;
+                if (location.href !== ${JSONObject.quote(url)}) return;
                 if (current) {
                     current.setEnabled(true);
                     return;
@@ -52,36 +52,62 @@ internal object Eruda {
                     }
                 }
 
-                const script = document.createElement("script");
+                let script;
                 function deactivate() {
                     setEnabled(false);
                 }
                 function discard() {
-                    script.remove();
+                    if (script) script.remove();
+                    window.removeEventListener("load", loadScript);
                     window.removeEventListener("pagehide", deactivate);
                     delete window.__liteSailEruda;
                 }
 
-                script.async = true;
-                script.referrerPolicy = "no-referrer";
-                script.onload = () => {
-                    const instance = window.eruda;
+                function onLoaded(instance) {
                     if (!instance || typeof instance.init !== "function" || typeof instance.destroy !== "function") {
                         discard();
                         return;
                     }
-                    script.remove();
+                    if (script) {
+                        script.remove();
+                        script = null;
+                    }
                     eruda = instance;
                     setEnabled(enabled);
-                };
-                script.onerror = discard;
+                }
+
+                function loadScript() {
+                    if (!enabled || window.eruda) {
+                        discard();
+                        return;
+                    }
+                    try {
+                        const url = "https://cdn.jsdelivr.net/npm/eruda";
+                        const amdRequire = typeof window.requirejs === "function" ? window.requirejs : window.require;
+                        if (typeof window.define === "function" && window.define.amd && typeof amdRequire === "function") {
+                            // Keep an AMD loader's added .js suffix out of the CDN request path.
+                            amdRequire([url + "#litesail"], onLoaded, discard);
+                            return;
+                        }
+
+                        script = document.createElement("script");
+                        script.async = true;
+                        script.referrerPolicy = "no-referrer";
+                        script.onload = () => onLoaded(window.eruda);
+                        script.onerror = discard;
+                        script.src = url;
+                        document.head.appendChild(script);
+                    } catch (error) {
+                        discard();
+                    }
+                }
+
                 window.__liteSailEruda = { setEnabled };
                 window.addEventListener("pagehide", deactivate);
-                try {
-                    script.src = "https://cdn.jsdelivr.net/npm/eruda";
-                    document.head.appendChild(script);
-                } catch (error) {
-                    discard();
+                if (document.readyState === "complete") {
+                    loadScript();
+                } else {
+                    window.addEventListener("load", loadScript, { once: true });
                 }
             })();
             """.trimIndent(),

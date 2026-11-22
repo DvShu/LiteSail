@@ -6,28 +6,31 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/browser_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/browser_address_background"
         android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="8dp">
+        android:orientation="horizontal">
 
         <LinearLayout
             android:id="@+id/address_bar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/browser_address_background"
+            android:background="?android:attr/selectableItemBackground"
             android:baselineAligned="false"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center_vertical"
             android:minHeight="48dp"
             android:orientation="horizontal"
-            android:paddingHorizontal="14dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="4dp"
             android:paddingVertical="8dp">
 
             <FrameLayout
@@ -62,17 +65,29 @@
                 android:maxLines="1"
                 android:textColor="@color/start_page_brand_text"
                 android:textColorHint="@color/start_page_search_text"
-                android:textDirection="ltr"
                 android:textSize="15sp" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/bookmark"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/browser_menu_bookmark"
+            android:enabled="false"
+            android:padding="0dp"
+            android:scaleType="center"
+            android:src="@drawable/browser_bookmark_icon"
+            android:tint="@color/browser_toolbar_icon" />
 
         <ImageButton
             android:id="@+id/reload"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/browser_reload_background"
+            android:background="?android:attr/selectableItemBackground"
             android:contentDescription="@string/refresh"
+            android:padding="0dp"
+            android:scaleType="center"
             android:src="@drawable/ic_browser_reload"
             android:tooltipText="@string/refresh" />
     </LinearLayout>

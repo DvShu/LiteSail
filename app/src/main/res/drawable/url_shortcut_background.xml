@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:insetTop="8dp"
-    android:insetBottom="8dp">
+    android:insetTop="6dp"
+    android:insetBottom="6dp">
     <ripple android:color="@color/start_page_search_ripple">
         <item>
             <shape android:shape="rectangle">

@@ -129,7 +129,7 @@
         android:id="@+id/search_shortcuts"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:paddingHorizontal="16dp">
 
         <Button
@@ -188,7 +188,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="4dp"
         android:gravity="center_vertical"

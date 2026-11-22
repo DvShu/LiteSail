@@ -27,6 +27,8 @@ internal object BrowserAddress {
 
     fun isWebScheme(scheme: String?): Boolean = scheme == "http" || scheme == "https"
 
+    fun isWebUrl(url: String): Boolean = isWebScheme(parseWebUrl(url)?.scheme?.lowercase())
+
     private fun explicitScheme(value: String): String? = scheme.find(value)?.value?.dropLast(1)?.lowercase()
 
     private fun webUrl(value: String, explicitScheme: String?): String? = when {

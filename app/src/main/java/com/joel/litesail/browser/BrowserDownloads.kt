@@ -3,6 +3,7 @@ package com.joel.litesail.browser
 import android.Manifest
 import android.app.Activity
 import android.app.DownloadManager
+import android.database.Cursor
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Intent
@@ -25,6 +26,8 @@ internal class BrowserDownloads(private val activity: Activity) {
     )
 
     private var awaitingPermission: FileRequest? = null
+    private val manager by lazy { activity.getSystemService(DownloadManager::class.java) }
+    private var historyDialog: BrowserDownloadHistoryDialog? = null
 
     fun start(url: String?, userAgent: String?, contentDisposition: String?, mimeType: String?) {
         val uri = url?.let(Uri::parse)?.normalizeScheme()
@@ -79,7 +82,6 @@ internal class BrowserDownloads(private val activity: Activity) {
     }
 
     private fun enqueue(file: FileRequest) {
-        val manager = activity.getSystemService(DownloadManager::class.java)
         val id = try {
             val request = DownloadManager.Request(file.url)
                 .setTitle(file.name)
@@ -100,6 +102,43 @@ internal class BrowserDownloads(private val activity: Activity) {
     }
 
     fun show() {
+        val dialog = historyDialog ?: BrowserDownloadHistoryDialog(
+            activity, ::queryHistory, ::openCompletedDownload, ::showSystemDownloads
+        ).also { historyDialog = it }
+        dialog.show()
+    }
+
+    fun dismiss() {
+        historyDialog?.dismiss()
+        historyDialog = null
+    }
+
+    private fun queryHistory(): List<BrowserDownloadRecord>? = try {
+        // The public query is scoped to downloads enqueued by this app.
+        manager?.query(DownloadManager.Query())?.use { it.readDownloadRecords() }
+    } catch (_: SecurityException) {
+        null
+    } catch (_: IllegalStateException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
+    private fun openCompletedDownload(id: Long) {
+        val opened = try {
+            val file = manager?.getUriForDownloadedFile(id)
+            if (file != null) openFile(file, manager?.getMimeTypeForDownloadedFile(id)) else false
+        } catch (_: SecurityException) {
+            false
+        } catch (_: IllegalArgumentException) {
+            false
+        } catch (_: IllegalStateException) {
+            false
+        }
+        if (!opened) message(R.string.download_file_open_failed)
+    }
+
+    private fun showSystemDownloads() {
         if (launch(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS))) return
 
         val downloadsRoot = DocumentsContract.buildRootUri("com.android.providers.downloads.documents", "downloads")
@@ -113,14 +152,15 @@ internal class BrowserDownloads(private val activity: Activity) {
     fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode != OPEN_FILE_REQUEST || resultCode != Activity.RESULT_OK) return
         val file = data?.data?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT } ?: return
-        val opened = try {
-            val mimeType = activity.contentResolver.getType(file) ?: "*/*"
-            launch(Intent(Intent.ACTION_VIEW).setDataAndType(file, mimeType)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-        } catch (_: SecurityException) {
-            false
-        }
-        if (!opened) message(R.string.download_file_open_failed)
+        if (!openFile(file)) message(R.string.download_file_open_failed)
+    }
+
+    private fun openFile(file: Uri, mimeType: String? = null): Boolean = try {
+        val type = mimeType ?: activity.contentResolver.getType(file) ?: "*/*"
+        launch(Intent(Intent.ACTION_VIEW).setDataAndType(file, type)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    } catch (_: SecurityException) {
+        false
     }
 
     @Suppress("DEPRECATION")
@@ -139,6 +179,42 @@ internal class BrowserDownloads(private val activity: Activity) {
         const val STORAGE_REQUEST = 102
         const val OPEN_FILE_REQUEST = 103
         const val PENDING_DOWNLOAD = "pending_download"
+    }
+}
+
+internal data class BrowserDownloadRecord(
+    val id: Long,
+    val title: String?,
+    val status: Int,
+    val downloadedBytes: Long,
+    val totalBytes: Long,
+    val updatedAt: Long
+) {
+    val isComplete get() = status == DownloadManager.STATUS_SUCCESSFUL
+    val isActive get() = when (status) {
+        DownloadManager.STATUS_PENDING, DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_PAUSED -> true
+        else -> false
+    }
+}
+
+private fun Cursor.readDownloadRecords(): List<BrowserDownloadRecord> {
+    val id = getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
+    val title = getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE)
+    val status = getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+    val downloaded = getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+    val total = getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+    val updated = getColumnIndexOrThrow(DownloadManager.COLUMN_LAST_MODIFIED_TIMESTAMP)
+    return buildList {
+        while (moveToNext()) {
+            add(BrowserDownloadRecord(
+                id = getLong(id),
+                title = getString(title),
+                status = getInt(status),
+                downloadedBytes = getLong(downloaded),
+                totalBytes = getLong(total),
+                updatedAt = getLong(updated)
+            ))
+        }
     }
 }
 

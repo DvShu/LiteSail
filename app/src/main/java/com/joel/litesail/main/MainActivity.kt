@@ -26,6 +26,7 @@ import android.webkit.WebChromeClient
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -34,13 +35,18 @@ import android.widget.FrameLayout
 import com.google.zxing.WriterException
 import com.joel.litesail.R
 import com.joel.litesail.browser.BrowserAddress
+import com.joel.litesail.browser.BrowserBookmark
+import com.joel.litesail.browser.BrowserBookmarks
+import com.joel.litesail.browser.BrowserBookmarksDialog
 import com.joel.litesail.browser.BrowserDownloads
 import com.joel.litesail.browser.BrowserMenuDialog
+import com.joel.litesail.browser.BrowserRequestFilter
 import com.joel.litesail.browser.BrowserWindows
 import com.joel.litesail.browser.BrowserWindowsDialog
 import com.joel.litesail.browser.Eruda
 import com.joel.litesail.browser.WebPageQrCode
 import com.joel.litesail.databinding.ActivityMainBinding
+import com.joel.litesail.databinding.ViewBookmarkEditorBinding
 import com.joel.litesail.databinding.ViewBrowserBinding
 import com.joel.litesail.databinding.ViewQrResultBinding
 import com.joel.litesail.databinding.ViewSearchPageBinding
@@ -61,6 +67,7 @@ private const val MAX_WINDOW_HISTORY_BYTES = 24 * 1024
 private const val QR_CONTENT = "qr_content"
 private const val QR_REQUEST = 101
 private const val WEB_DEBUG_ENABLED = "web_debug_enabled"
+private const val AD_BLOCK_ENABLED = "ad_block_enabled"
 private const val EXIT_CONFIRMATION_MS = 2_000L
 private const val EXIT_HINT_FADE_MS = 150L
 private val HTTP_PREFIX = Regex("^\\s*https?://", RegexOption.IGNORE_CASE)
@@ -82,7 +89,10 @@ class MainActivity : Activity() {
     private var activePage = Page.START
     private val windows = BrowserWindows()
     private val downloads = BrowserDownloads(this)
+    private val bookmarks by lazy { BrowserBookmarks(getSharedPreferences("browser_bookmarks", MODE_PRIVATE)) }
     private var windowsDialog: BrowserWindowsDialog? = null
+    private var bookmarksDialog: BrowserBookmarksDialog? = null
+    private var bookmarkEditor: AlertDialog? = null
     private var webView: WebView? = null
     private var browserUrl: String? = null
     private var siteIcon: Bitmap? = null
@@ -95,6 +105,9 @@ class MainActivity : Activity() {
     private var exitConfirmationDeadline = 0L
     private val hideExitHint = Runnable { clearExitConfirmation() }
     private val browserPreferences by lazy { getSharedPreferences("browser_settings", MODE_PRIVATE) }
+    private val requestFilter by lazy {
+        BrowserRequestFilter(browserPreferences.getBoolean(AD_BLOCK_ENABLED, true))
+    }
     private val webDebugEnabled get() = browserPreferences.getBoolean(WEB_DEBUG_ENABLED, false)
     private val toolbar get() = layout.browserToolbar
 
@@ -177,16 +190,20 @@ class MainActivity : Activity() {
             builtInZoomControls = true
             displayZoomControls = false
         }
+        val filter = requestFilter
         webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val scheme = request.url.scheme
-                if (BrowserAddress.isWebScheme(scheme)) return false
+                if (!filter.blocksNavigation(scheme)) return false
                 if (request.isForMainFrame) {
                     val sourceHost = view.url?.let { Uri.parse(it).host } ?: "-"
                     Log.i("LiteSail", "Blocked navigation scheme=${scheme ?: "-"} sourceHost=$sourceHost")
                 }
                 return true
             }
+
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                filter.intercept(request)
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 if (view !== webView) return
@@ -218,6 +235,8 @@ class MainActivity : Activity() {
             override fun onPageCommitVisible(view: WebView, url: String) {
                 if (view !== webView) return
                 updateCommittedConnection(view, url)
+                updateBookmarkButton()
+                updateNavigationButtons()
                 // Restored history pages can skip onPageFinished.
                 enableWebDebugIfReady(view, url)
             }
@@ -244,8 +263,10 @@ class MainActivity : Activity() {
 
             override fun onReceivedTitle(view: WebView, title: String?) {
                 if (view !== webView) return
+                val pageTitle = title?.takeIf(String::isNotBlank)
+                if (view.url == browserUrl && failedUrl == null) updateAddressLabel(pageTitle)
                 if (binding.root.visibility == View.VISIBLE) {
-                    this@MainActivity.title = title?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
+                    this@MainActivity.title = pageTitle ?: getString(R.string.app_name)
                 }
                 refreshCurrentPageCard()
             }
@@ -271,7 +292,7 @@ class MainActivity : Activity() {
             releaseWebView()
             browserUrl = null
             windows.selected.rememberAddress(null, null)
-            binding.address.text = null
+            updateAddressLabel()
             searchFromBrowser = false
             refreshCurrentPageCard()
             if (activePage == Page.BROWSER) showStartPage()
@@ -282,6 +303,7 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     private fun bindControls() = with(binding) {
         startPage.startSearchBox.clipToOutline = true
+        browserHeader.clipToOutline = true
         startPage.search.setOnClickListener { showSearchPage() }
         startPage.scanQr.setOnClickListener {
             startActivityForResult(Intent(this@MainActivity, QrScanActivity::class.java), QR_REQUEST)
@@ -289,6 +311,9 @@ class MainActivity : Activity() {
         addressBar.setOnClickListener {
             clearSearchInput()
             showSearchPage(fromBrowser = true)
+        }
+        bookmark.setOnClickListener {
+            currentWebPageUrl()?.takeIf(BrowserAddress::isWebUrl)?.let(::bookmarkPage)
         }
         toolbar.root.clipToOutline = true
         toolbar.back.setOnClickListener { webView?.takeIf(WebView::canGoBack)?.goBack() }
@@ -302,8 +327,16 @@ class MainActivity : Activity() {
                 this@MainActivity,
                 isWebDebugEnabled = { webDebugEnabled },
                 onWebDebugChanged = ::setWebDebugEnabled,
+                isAdBlockingEnabled = { requestFilter.adBlockingEnabled },
+                onAdBlockingChanged = { enabled ->
+                    requestFilter.adBlockingEnabled = enabled
+                    browserPreferences.edit().putBoolean(AD_BLOCK_ENABLED, enabled).apply()
+                },
                 currentPageUrl = ::currentWebPageUrl,
                 onPageQrCode = ::showWebPageQrCode,
+                isBookmarked = bookmarks::contains,
+                onBookmarkPage = ::bookmarkPage,
+                onBookmarks = ::showBookmarks,
                 onDownloads = downloads::show,
                 onWindows = ::showWindows,
                 onExit = ::exitBrowser
@@ -319,6 +352,62 @@ class MainActivity : Activity() {
         return webView?.url?.takeIf {
             it == browserUrl && BrowserAddress.isWebScheme(Uri.parse(it).scheme)
         }
+    }
+
+    private fun bookmarkPage(url: String) {
+        val saved = bookmarks[url]
+        if (saved != null) {
+            editBookmark(saved)
+        } else if (bookmarks.add(url, currentWebTitle())) {
+            updateBookmarkButton()
+            Toast.makeText(this, R.string.browser_bookmark_saved, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showBookmarks() {
+        val dialog = bookmarksDialog ?: BrowserBookmarksDialog(this, bookmarks, ::open, ::editBookmark)
+            .also { bookmarksDialog = it }
+        dialog.show()
+    }
+
+    private fun editBookmark(bookmark: BrowserBookmark) {
+        bookmarkEditor?.dismiss()
+        val editorView = ViewBookmarkEditorBinding.inflate(layoutInflater)
+        editorView.bookmarkName.setText(bookmark.title)
+        editorView.bookmarkAddress.text = bookmark.url
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.browser_bookmark_edit)
+            .setView(editorView.root)
+            .setPositiveButton(R.string.browser_bookmark_save) { _, _ ->
+                bookmarks.rename(bookmark.url, editorView.bookmarkName.text.toString())
+                refreshBookmarks()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.browser_bookmark_remove) { _, _ ->
+                bookmarks.remove(bookmark.url)
+                refreshBookmarks()
+                Toast.makeText(this, R.string.browser_bookmark_removed, Toast.LENGTH_SHORT).show()
+            }
+            .create()
+        bookmarkEditor = dialog
+        dialog.setOnDismissListener { if (bookmarkEditor === dialog) bookmarkEditor = null }
+        dialog.show()
+    }
+
+    private fun refreshBookmarks() {
+        updateBookmarkButton()
+        bookmarksDialog?.takeIf { it.isShowing }?.refresh()
+    }
+
+    private fun updateBookmarkButton() = with(binding.bookmark) {
+        val url = currentWebPageUrl()?.takeIf(BrowserAddress::isWebUrl)
+        isEnabled = url != null
+        isSelected = url?.let(bookmarks::contains) == true
+        val label = getString(
+            if (isSelected) R.string.browser_bookmark_edit else R.string.browser_menu_bookmark
+        )
+        contentDescription = label
+        tooltipText = label
     }
 
     private fun showWindows() {
@@ -355,7 +444,7 @@ class MainActivity : Activity() {
         clearSearchInput()
         failedUrl = null
         browserUrl = null
-        binding.address.text = null
+        updateAddressLabel()
         binding.pageError.visibility = View.GONE
         setLoading(false)
         setSiteIcon(null)
@@ -570,9 +659,7 @@ class MainActivity : Activity() {
         searchPage.currentPageCard.visibility = if (url == null) View.GONE else View.VISIBLE
         if (url == null) return
 
-        val pageTitle = webView?.title?.takeIf {
-            failedUrl == null && url == webView?.url && it.isNotBlank()
-        }
+        val pageTitle = currentWebTitle()
         searchPage.currentPageTitle.text = pageTitle ?: getString(R.string.current_web_page)
         searchPage.currentPageUrl.text = url
     }
@@ -733,6 +820,7 @@ class MainActivity : Activity() {
         }
         val pageTitle = if (isBrowser) webView?.title else null
         title = pageTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
+        updateBookmarkButton()
         updateWindowColors(page)
     }
 
@@ -793,10 +881,23 @@ class MainActivity : Activity() {
         if (browserUrl != url) {
             setSiteIcon(null)
             browserUrl = url
-            binding.address.text = url
-            updateAddressDescription()
         }
+        updateAddressLabel()
+        updateBookmarkButton()
         refreshCurrentPageCard()
+    }
+
+    private fun currentWebTitle(): String? = webView?.takeIf {
+        failedUrl == null && browserUrl != null && it.url == browserUrl
+    }?.title?.takeIf(String::isNotBlank)
+
+    private fun updateAddressLabel(pageTitle: String? = currentWebTitle()) {
+        val label = pageTitle ?: browserUrl.orEmpty()
+        with(binding.address) {
+            textDirection = if (pageTitle == null) View.TEXT_DIRECTION_LTR else View.TEXT_DIRECTION_FIRST_STRONG
+            if (text != label) text = label
+        }
+        updateAddressDescription()
     }
 
     private fun updateCommittedConnection(view: WebView, committedUrl: String) {
@@ -825,7 +926,7 @@ class MainActivity : Activity() {
 
     private fun updateAddressDescription() {
         binding.addressBar.contentDescription = connectionStatus?.let {
-            getString(R.string.browser_address_with_connection, browserUrl.orEmpty(), getString(it.description))
+            getString(R.string.browser_address_with_connection, binding.address.text, getString(it.description))
         }
     }
 
@@ -904,6 +1005,7 @@ class MainActivity : Activity() {
 
     override fun onStart() {
         super.onStart()
+        refreshBookmarks()
         webView?.onResume()
     }
 
@@ -924,8 +1026,11 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        downloads.dismiss()
         menuDialog?.dismiss()
         windowsDialog?.dismiss()
+        bookmarkEditor?.dismiss()
+        bookmarksDialog?.dismiss()
         pageQrDialog?.dismiss()
         releaseWebView()
         super.onDestroy()

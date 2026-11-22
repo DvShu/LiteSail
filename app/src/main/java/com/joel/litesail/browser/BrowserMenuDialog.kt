@@ -14,8 +14,13 @@ internal class BrowserMenuDialog(
     context: Context,
     private val isWebDebugEnabled: () -> Boolean,
     private val onWebDebugChanged: (Boolean) -> Unit,
+    private val isAdBlockingEnabled: () -> Boolean,
+    private val onAdBlockingChanged: (Boolean) -> Unit,
     private val currentPageUrl: () -> String?,
     private val onPageQrCode: (String) -> Unit,
+    private val isBookmarked: (String) -> Boolean,
+    private val onBookmarkPage: (String) -> Unit,
+    private val onBookmarks: () -> Unit,
     private val onDownloads: () -> Unit,
     private val onWindows: () -> Unit,
     private val onExit: () -> Unit
@@ -33,6 +38,15 @@ internal class BrowserMenuDialog(
         binding.openDownloads.setOnClickListener {
             dismiss()
             onDownloads()
+        }
+        binding.openBookmarks.setOnClickListener {
+            dismiss()
+            onBookmarks()
+        }
+        binding.bookmarkPage.setOnClickListener {
+            val url = currentPageUrl()?.takeIf(BrowserAddress::isWebUrl) ?: return@setOnClickListener
+            dismiss()
+            onBookmarkPage(url)
         }
         binding.openWindows.setOnClickListener {
             dismiss()
@@ -52,9 +66,19 @@ internal class BrowserMenuDialog(
 
     override fun onStart() {
         super.onStart()
-        binding.pageQrCode.visibility = if (currentPageUrl() == null) View.GONE else View.VISIBLE
+        val url = currentPageUrl()
+        binding.pageQrCode.visibility = if (url == null) View.INVISIBLE else View.VISIBLE
+        val bookmarkUrl = url?.takeIf(BrowserAddress::isWebUrl)
+        binding.bookmarkPage.isEnabled = bookmarkUrl != null
+        binding.bookmarkPage.isSelected = bookmarkUrl?.let(isBookmarked) == true
+        binding.bookmarkPage.setText(
+            if (binding.bookmarkPage.isSelected) R.string.browser_bookmark_saved else R.string.browser_menu_bookmark
+        )
         binding.webDebug.setOnCheckedChangeListener(null)
         binding.webDebug.isChecked = isWebDebugEnabled()
         binding.webDebug.setOnCheckedChangeListener { _, checked -> onWebDebugChanged(checked) }
+        binding.adBlock.setOnCheckedChangeListener(null)
+        binding.adBlock.isChecked = isAdBlockingEnabled()
+        binding.adBlock.setOnCheckedChangeListener { _, checked -> onAdBlockingChanged(checked) }
     }
 }
