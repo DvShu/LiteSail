@@ -337,11 +337,10 @@ class MainActivity : Activity() {
                 },
                 currentPageUrl = ::currentWebPageUrl,
                 onPageQrCode = ::showWebPageQrCode,
-                isBookmarked = bookmarks::contains,
-                onBookmarkPage = ::bookmarkPage,
                 onBookmarks = ::showBookmarks,
                 onDownloads = downloads::show,
                 onWindows = ::showWindows,
+                onHome = ::showStartPage,
                 onExit = ::exitBrowser
             ).also { menuDialog = it }
             dialog.show()

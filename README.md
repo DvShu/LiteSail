@@ -1,6 +1,6 @@
 # LiteSail · 轻舟浏览器
 
-基于系统 WebView 的轻量 Android 浏览器。当前版本是 **v0.4.0**。启动后显示轻舟首页，点击「搜索或输入网址」进入搜索页。搜索页可直接打开网址、使用 Bing 搜索关键词，也可点选本机的搜索历史。浏览页支持站内链接、前进、后退和刷新。点地址栏可在搜索页查看当前网页，复制或编辑链接。省略协议的网址默认使用 HTTPS，也可以显式输入 `http://`。底部菜单提供多窗口、书签、网页二维码和下载管理。Android 8.0（API 26）及以上可安装。
+基于系统 WebView 的轻量 Android 浏览器。当前版本是 **v0.4.1**。启动后显示轻舟首页，点击「搜索或输入网址」进入搜索页。搜索页可直接打开网址、使用 Bing 搜索关键词，也可点选本机的搜索历史。浏览页支持站内链接、前进、后退和刷新。点地址栏可在搜索页查看当前网页，复制或编辑链接。省略协议的网址默认使用 HTTPS，也可以显式输入 `http://`。底部菜单提供多窗口、书签、网页二维码和下载管理。Android 8.0（API 26）及以上可安装。
 
 ## 构建与运行
 
@@ -12,7 +12,7 @@
 .\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-在 macOS / Linux 使用 `./gradlew`，参数相同。APK 按 `LiteSail-v<versionName>.apk` 命名，调试包和正式包分别位于 `app/build/outputs/apk/debug/` 和 `app/build/outputs/apk/release/`。连接已启用 USB 调试的设备后，可用 `adb install -r app/build/outputs/apk/debug/LiteSail-v0.4.0.apk` 安装当前版本的调试包。
+在 macOS / Linux 使用 `./gradlew`，参数相同。APK 按 `LiteSail-v<versionName>.apk` 命名，调试包和正式包分别位于 `app/build/outputs/apk/debug/` 和 `app/build/outputs/apk/release/`。连接已启用 USB 调试的设备后，可用 `adb install -r app/build/outputs/apk/debug/LiteSail-v0.4.1.apk` 安装当前版本的调试包。
 
 ## 源码结构
 

@@ -89,7 +89,7 @@
     <string name="browser_page_qr_code">二维码</string>
     <string name="browser_page_qr_code_too_long">网页地址过长，无法生成二维码。</string>
     <string name="browser_menu_share">分享网页</string>
-    <string name="browser_menu_close">收起菜单</string>
+    <string name="browser_menu_return_home">返回首页</string>
     <string name="refresh">刷新</string>
     <string name="browser_connection_encrypted">连接已加密（HTTPS）</string>
     <string name="browser_connection_unencrypted">连接未加密（HTTP）</string>
