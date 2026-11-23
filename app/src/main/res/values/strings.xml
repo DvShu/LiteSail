@@ -50,6 +50,12 @@
     <string name="download_storage_permission_denied">保存到下载目录需要存储权限</string>
     <string name="download_ui_unavailable">无法打开系统下载目录</string>
     <string name="download_file_open_failed">无法打开此文件</string>
+    <string name="app_update_title">发现更新</string>
+    <string name="app_update_message">当前版本 %1$s\nGitHub 最新标签 %2$s</string>
+    <string name="app_update_later">稍后</string>
+    <string name="app_update_download">更新</string>
+    <string name="app_update_downloading">更新正在下载</string>
+    <string name="app_update_download_failed">更新下载失败，请稍后重试</string>
     <string name="download_history_empty">暂无通过轻舟浏览器下载的记录</string>
     <string name="download_history_unavailable">无法读取下载记录</string>
     <string name="download_history_loading">正在读取下载记录…</string>

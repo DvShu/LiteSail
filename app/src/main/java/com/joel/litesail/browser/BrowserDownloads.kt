@@ -17,12 +17,16 @@ import android.webkit.URLUtil
 import android.widget.Toast
 import com.joel.litesail.R
 
-internal class BrowserDownloads(private val activity: Activity) {
+internal class BrowserDownloads(
+    private val activity: Activity,
+    private val onUpdateQueued: (Long) -> Unit
+) {
     private data class FileRequest(
         val url: Uri,
         val name: String,
         val userAgent: String?,
-        val mimeType: String?
+        val mimeType: String?,
+        val isAppUpdate: Boolean = false
     )
 
     private var awaitingPermission: FileRequest? = null
@@ -37,7 +41,14 @@ internal class BrowserDownloads(private val activity: Activity) {
         }
 
         val name = downloadFileName(URLUtil.guessFileName(uri.toString(), contentDisposition, mimeType))
-        val request = FileRequest(uri, name, userAgent, mimeType)
+        start(FileRequest(uri, name, userAgent, mimeType))
+    }
+
+    fun startAppUpdate(url: String, name: String) {
+        start(FileRequest(Uri.parse(url), name, null, "application/vnd.android.package-archive", isAppUpdate = true))
+    }
+
+    private fun start(request: FileRequest) {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
             activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -71,6 +82,7 @@ internal class BrowserDownloads(private val activity: Activity) {
             putString("name", request.name)
             putString("userAgent", request.userAgent)
             putString("mimeType", request.mimeType)
+            putBoolean("isAppUpdate", request.isAppUpdate)
         })
     }
 
@@ -78,7 +90,9 @@ internal class BrowserDownloads(private val activity: Activity) {
         val saved = state?.getBundle(PENDING_DOWNLOAD) ?: return
         val url = saved.getString("url") ?: return
         val name = saved.getString("name") ?: return
-        awaitingPermission = FileRequest(Uri.parse(url), name, saved.getString("userAgent"), saved.getString("mimeType"))
+        awaitingPermission = FileRequest(
+            Uri.parse(url), name, saved.getString("userAgent"), saved.getString("mimeType"), saved.getBoolean("isAppUpdate")
+        )
     }
 
     private fun enqueue(file: FileRequest) {
@@ -98,6 +112,7 @@ internal class BrowserDownloads(private val activity: Activity) {
         } catch (_: SecurityException) {
             -1L
         }
+        if (id >= 0L && file.isAppUpdate) onUpdateQueued(id)
         message(if (id >= 0L) R.string.download_queued else R.string.download_enqueue_failed)
     }
 
@@ -138,7 +153,7 @@ internal class BrowserDownloads(private val activity: Activity) {
         if (!opened) message(R.string.download_file_open_failed)
     }
 
-    private fun showSystemDownloads() {
+    fun showSystemDownloads() {
         if (launch(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS))) return
 
         val downloadsRoot = DocumentsContract.buildRootUri("com.android.providers.downloads.documents", "downloads")

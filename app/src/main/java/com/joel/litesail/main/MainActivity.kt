@@ -55,6 +55,7 @@ import com.joel.litesail.databinding.ViewWebPageQrCodeBinding
 import com.joel.litesail.scan.ui.QrScanActivity
 import com.joel.litesail.search.SearchHistory
 import com.joel.litesail.search.SearchHistoryAdapter
+import com.joel.litesail.update.AppUpdates
 import java.text.NumberFormat
 
 private const val ACTIVE_PAGE = "active_page"
@@ -88,7 +89,8 @@ class MainActivity : Activity() {
     private lateinit var historyAdapter: SearchHistoryAdapter
     private var activePage = Page.START
     private val windows = BrowserWindows()
-    private val downloads = BrowserDownloads(this)
+    private val downloads: BrowserDownloads = BrowserDownloads(this) { id -> updates.onDownloadQueued(id) }
+    private val updates = AppUpdates(this, downloads)
     private val bookmarks by lazy { BrowserBookmarks(getSharedPreferences("browser_bookmarks", MODE_PRIVATE)) }
     private var windowsDialog: BrowserWindowsDialog? = null
     private var bookmarksDialog: BrowserBookmarksDialog? = null
@@ -158,6 +160,7 @@ class MainActivity : Activity() {
         }
         updateWindowCount()
         updateNavigationButtons()
+        updates.check()
     }
 
     private fun obtainWebView(): WebView {
@@ -1009,6 +1012,16 @@ class MainActivity : Activity() {
         webView?.onResume()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updates.onResume()
+    }
+
+    override fun onPause() {
+        updates.onPause()
+        super.onPause()
+    }
+
     override fun onStop() {
         clearExitConfirmation()
         webView?.onPause()
@@ -1026,6 +1039,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        updates.close()
         downloads.dismiss()
         menuDialog?.dismiss()
         windowsDialog?.dismiss()
