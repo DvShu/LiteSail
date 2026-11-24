@@ -15,8 +15,8 @@ android {
         applicationId = "com.joel.litesail"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.6.0"
+        versionCode = 10
+        versionName = "0.7.0"
     }
 
     buildFeatures {
@@ -59,6 +59,7 @@ androidComponents {
 }
 
 dependencies {
+    implementation("androidx.webkit:webkit:1.13.0")
     implementation("com.google.zxing:core:3.5.4")
     testImplementation("junit:junit:4.13.2")
 }

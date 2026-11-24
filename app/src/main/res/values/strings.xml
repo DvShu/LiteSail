@@ -98,6 +98,12 @@
     <string name="browser_bookmark_tab">收藏</string>
     <string name="browser_bookmark_search">搜索收藏</string>
     <string name="browser_menu_incognito">无痕浏览</string>
+    <string name="browser_incognito_exit">退出无痕</string>
+    <string name="browser_incognito_windows">无痕窗口</string>
+    <string name="browser_incognito_search">无痕搜索或输入网址</string>
+    <string name="browser_incognito_no_history">无痕浏览不保存搜索记录</string>
+    <string name="browser_incognito_open_failed">无法启动无痕 WebView，请更新系统 WebView 后重试。</string>
+    <string name="browser_incognito_download">下载文件会保存在设备上，是否继续？</string>
     <string name="browser_menu_bookmark">收藏网址</string>
     <string name="browser_bookmark_saved">已收藏</string>
     <string name="browser_bookmark_empty">暂无书签</string>

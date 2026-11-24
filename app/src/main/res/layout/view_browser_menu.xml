@@ -36,8 +36,9 @@
                 android:drawableTop="@drawable/ic_toolbar_window"
                 android:text="@string/browser_windows" />
 
-            <TextView
-                style="@style/Widget.LiteSail.BrowserMenuItem"
+            <Button
+                android:id="@+id/toggle_incognito"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
                 android:drawableTint="@color/browser_toolbar_icon"
                 android:drawableTop="@drawable/ic_menu_incognito"
                 android:enabled="false"

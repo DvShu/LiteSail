@@ -1,5 +1,6 @@
 package com.joel.litesail.ui
 
+import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.widget.Button
 import android.widget.FrameLayout
 import com.joel.litesail.R
@@ -18,6 +20,7 @@ internal open class BottomSheetDialog(
     private val centerActions: Boolean = false
 ) : Dialog(context, R.style.Theme_LiteSail_BottomSheet) {
     private val binding by lazy { ViewBottomSheetBinding.inflate(layoutInflater) }
+    private val hostWindow = (context as? Activity)?.window
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +33,11 @@ internal open class BottomSheetDialog(
             setGravity(Gravity.BOTTOM)
             setLayout(MATCH_PARENT, WRAP_CONTENT)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        hostWindow?.let { window?.setFlags(it.attributes.flags and FLAG_SECURE, FLAG_SECURE) }
     }
 
     fun setBody(view: View) = with(binding.sheetBody) {

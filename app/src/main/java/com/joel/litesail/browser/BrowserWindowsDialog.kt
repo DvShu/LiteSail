@@ -15,8 +15,9 @@ internal class BrowserWindowsDialog(
     private val windows: BrowserWindows,
     private val onSelect: (Int) -> Unit,
     private val onClose: (Int) -> Unit,
-    private val onAdd: () -> Unit
-) : BottomSheetDialog(context, R.string.browser_window_manager) {
+    private val onAdd: () -> Unit,
+    incognito: Boolean = false
+) : BottomSheetDialog(context, if (incognito) R.string.browser_incognito_windows else R.string.browser_window_manager) {
     private lateinit var binding: ViewBrowserWindowsBinding
 
     private val adapter = object : BaseAdapter() {

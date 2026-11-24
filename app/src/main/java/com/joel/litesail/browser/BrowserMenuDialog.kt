@@ -17,6 +17,8 @@ internal class BrowserMenuDialog(
     private val onLibrary: () -> Unit,
     private val onDownloads: () -> Unit,
     private val onWindows: () -> Unit,
+    private val isIncognito: () -> Boolean,
+    private val onToggleIncognito: () -> Unit,
     private val onExit: () -> Unit
 ) : BottomSheetDialog(context, R.string.browser_menu) {
     private lateinit var binding: ViewBrowserMenuBinding
@@ -39,6 +41,10 @@ internal class BrowserMenuDialog(
             dismiss()
             onWindows()
         }
+        binding.toggleIncognito.setOnClickListener {
+            dismiss()
+            onToggleIncognito()
+        }
         binding.pageQrCode.setOnClickListener {
             val url = currentPageUrl() ?: return@setOnClickListener
             dismiss()
@@ -48,9 +54,13 @@ internal class BrowserMenuDialog(
 
     override fun onStart() {
         super.onStart()
+        val incognito = isIncognito()
+        binding.toggleIncognito.isEnabled = incognito || IncognitoProfile.isSupported
+        binding.toggleIncognito.setText(if (incognito) R.string.browser_incognito_exit else R.string.browser_menu_incognito)
         binding.pageQrCode.isEnabled = currentPageUrl() != null
         binding.webDebug.setOnCheckedChangeListener(null)
-        binding.webDebug.isChecked = isWebDebugEnabled()
+        binding.webDebug.isEnabled = !incognito
+        binding.webDebug.isChecked = !incognito && isWebDebugEnabled()
         binding.webDebug.setOnCheckedChangeListener { _, checked -> onWebDebugChanged(checked) }
         binding.adBlock.setOnCheckedChangeListener(null)
         binding.adBlock.isChecked = isAdBlockingEnabled()

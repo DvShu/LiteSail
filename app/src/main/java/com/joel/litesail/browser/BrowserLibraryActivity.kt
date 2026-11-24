@@ -10,6 +10,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.BaseAdapter
@@ -42,6 +43,13 @@ class BrowserLibraryActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBrowserLibraryBinding.inflate(layoutInflater)
+        if (intent.getBooleanExtra(INCOGNITO, false)) {
+            window.addFlags(FLAG_SECURE)
+            binding.root.isSaveFromParentEnabled = false
+            with(binding.librarySearch) {
+                imeOptions = imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+            }
+        }
         setContentView(binding.root)
         if (Build.VERSION.SDK_INT >= 35) {
             binding.root.setOnApplyWindowInsetsListener { view, insets ->
@@ -233,6 +241,7 @@ class BrowserLibraryActivity : Activity() {
 
     companion object {
         internal const val SELECTED_URL = "selected_library_url"
+        internal const val INCOGNITO = "library_incognito"
         private const val BOOKMARKS_SELECTED = "library_bookmarks_selected"
     }
 }

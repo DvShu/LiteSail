@@ -17,6 +17,7 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebChromeClient
@@ -44,6 +45,7 @@ import com.joel.litesail.browser.BrowserWindows
 import com.joel.litesail.browser.BrowserWindowsDialog
 import com.joel.litesail.browser.DownloadsActivity
 import com.joel.litesail.browser.Eruda
+import com.joel.litesail.browser.IncognitoProfile
 import com.joel.litesail.browser.WebPageQrCodeShare
 import com.joel.litesail.databinding.ActivityMainBinding
 import com.joel.litesail.databinding.ViewBrowserBinding
@@ -67,6 +69,8 @@ private const val MAX_WINDOW_HISTORY_BYTES = 24 * 1024
 private const val QR_CONTENT = "qr_content"
 private const val QR_REQUEST = 101
 private const val LIBRARY_REQUEST = 105
+private const val INCOGNITO_QR_REQUEST = 106
+private const val INCOGNITO_LIBRARY_REQUEST = 107
 private const val WEB_DEBUG_ENABLED = "web_debug_enabled"
 private const val AD_BLOCK_ENABLED = "ad_block_enabled"
 private const val EXIT_CONFIRMATION_MS = 2_000L
@@ -75,6 +79,9 @@ private val HTTP_PREFIX = Regex("^\\s*https?://", RegexOption.IGNORE_CASE)
 
 class MainActivity : Activity() {
     private enum class Page { START, SEARCH, BROWSER, QR_RESULT }
+    private class IncognitoSession(val profile: IncognitoProfile) {
+        val windows = BrowserWindows()
+    }
     private enum class ConnectionStatus(val icon: Int, val description: Int) {
         ENCRYPTED(R.drawable.ic_connection_encrypted, R.string.browser_connection_encrypted),
         UNENCRYPTED(R.drawable.ic_connection_unencrypted, R.string.browser_connection_unencrypted)
@@ -88,7 +95,10 @@ class MainActivity : Activity() {
     private lateinit var searchHistory: SearchHistory
     private lateinit var historyAdapter: SearchHistoryAdapter
     private var activePage = Page.START
-    private val windows = BrowserWindows()
+    private val regularWindows = BrowserWindows()
+    private var incognitoSession: IncognitoSession? = null
+    private val isIncognito get() = incognitoSession != null
+    private val windows get() = incognitoSession?.windows ?: regularWindows
     private val downloads: BrowserDownloads = BrowserDownloads(this) { id -> updates.onDownloadQueued(id) }
     private val updates = AppUpdates(this, downloads)
     private val pageQrShare = WebPageQrCodeShare(this)
@@ -105,6 +115,7 @@ class MainActivity : Activity() {
     private var scannedContent: String? = null
     private var menuDialog: BrowserMenuDialog? = null
     private var clearHistoryDialog: BottomSheetDialog? = null
+    private var incognitoDownloadDialog: BottomSheetDialog? = null
     private var exitConfirmationDeadline = 0L
     private val hideExitHint = Runnable { clearExitConfirmation() }
     private val browserPreferences by lazy { getSharedPreferences("browser_settings", MODE_PRIVATE) }
@@ -162,12 +173,22 @@ class MainActivity : Activity() {
         }
         updateWindowCount()
         updateNavigationButtons()
+        layout.root.post { IncognitoProfile.clearPreviousSessions() }
         updates.check()
     }
 
-    private fun obtainWebView(): WebView {
+    private fun obtainWebView(): WebView? {
         webView?.let { return it }
         return WebView(this).also { view ->
+            val session = incognitoSession
+            if (session != null) {
+                if (!session.profile.attach(view)) {
+                    view.destroy()
+                    Toast.makeText(this, R.string.browser_incognito_open_failed, Toast.LENGTH_LONG).show()
+                    return null
+                }
+                view.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+            }
             webView = view
             configureWebView(view)
             binding.webContent.addView(
@@ -181,7 +202,14 @@ class MainActivity : Activity() {
         setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true)
         setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             if (view !== webView) return@setDownloadListener
-            downloads.start(url, userAgent, contentDisposition, mimeType)
+            val session = incognitoSession
+            if (session == null) {
+                downloads.start(url, userAgent, contentDisposition, mimeType)
+            } else {
+                confirmIncognitoDownload {
+                    if (incognitoSession === session) downloads.start(url, userAgent, contentDisposition, mimeType)
+                }
+            }
             finishDownloadNavigation(view, url)
         }
         settings.apply {
@@ -200,7 +228,7 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val scheme = request.url.scheme
                 if (!filter.blocksNavigation(scheme)) return false
-                if (request.isForMainFrame) {
+                if (request.isForMainFrame && view === webView && !isIncognito) {
                     val sourceHost = view.url?.let { Uri.parse(it).host } ?: "-"
                     Log.i("LiteSail", "Blocked navigation scheme=${scheme ?: "-"} sourceHost=$sourceHost")
                 }
@@ -279,7 +307,7 @@ class MainActivity : Activity() {
                     updateAddressLabel(pageTitle)
                     updateBrowserVisitTitle(url, pageTitle)
                 }
-                if (binding.root.visibility == View.VISIBLE) {
+                if (!isIncognito && binding.root.visibility == View.VISIBLE) {
                     this@MainActivity.title = pageTitle ?: getString(R.string.app_name)
                 }
                 refreshCurrentPageCard()
@@ -320,7 +348,8 @@ class MainActivity : Activity() {
         browserHeader.clipToOutline = true
         startPage.search.setOnClickListener { showSearchPage() }
         startPage.scanQr.setOnClickListener {
-            startActivityForResult(Intent(this@MainActivity, QrScanActivity::class.java), QR_REQUEST)
+            val request = if (isIncognito) INCOGNITO_QR_REQUEST else QR_REQUEST
+            startActivityForResult(Intent(this@MainActivity, QrScanActivity::class.java), request)
         }
         addressBar.setOnClickListener {
             clearSearchInput()
@@ -334,6 +363,7 @@ class MainActivity : Activity() {
         toolbar.forward.setOnClickListener { webView?.takeIf(WebView::canGoForward)?.goForward() }
         toolbar.home.setOnClickListener { showStartPage() }
         toolbar.windows.setOnClickListener { showWindows() }
+        layout.exitIncognito.setOnClickListener { exitIncognito() }
         toolbar.openMenu.setOnClickListener {
             dismissKeyboard()
             clearExitConfirmation()
@@ -349,10 +379,15 @@ class MainActivity : Activity() {
                 currentPageUrl = ::currentWebPageUrl,
                 onPageQrCode = pageQrShare::show,
                 onLibrary = {
-                    startActivityForResult(Intent(this@MainActivity, BrowserLibraryActivity::class.java), LIBRARY_REQUEST)
+                    val request = if (isIncognito) INCOGNITO_LIBRARY_REQUEST else LIBRARY_REQUEST
+                    val intent = Intent(this@MainActivity, BrowserLibraryActivity::class.java)
+                        .putExtra(BrowserLibraryActivity.INCOGNITO, isIncognito)
+                    startActivityForResult(intent, request)
                 },
                 onDownloads = { startActivity(Intent(this@MainActivity, DownloadsActivity::class.java)) },
                 onWindows = ::showWindows,
+                isIncognito = { isIncognito },
+                onToggleIncognito = ::toggleIncognito,
                 onExit = ::exitBrowser
             ).also { menuDialog = it }
             dialog.show()
@@ -369,7 +404,7 @@ class MainActivity : Activity() {
     }
 
     private fun recordBrowserVisit(view: WebView, url: String) {
-        if (activePage != Page.BROWSER || failedUrl != null || view.url != url || !BrowserAddress.isWebUrl(url)) return
+        if (isIncognito || activePage != Page.BROWSER || failedUrl != null || view.url != url || !BrowserAddress.isWebUrl(url)) return
         if (recordedVisit?.url == url) {
             updateBrowserVisitTitle(url, view.title)
             return
@@ -419,6 +454,64 @@ class MainActivity : Activity() {
         tooltipText = label
     }
 
+    private fun toggleIncognito() {
+        if (isIncognito) {
+            exitIncognito()
+            return
+        }
+        val profile = IncognitoProfile.create() ?: return
+        dismissKeyboard()
+        dismissWindowsDialog()
+        rememberActiveWindow(saveHistory = true)
+        releaseWebView()
+        incognitoSession = IncognitoSession(profile)
+        updateIncognitoAppearance()
+        switchToSelectedWindow()
+    }
+
+    private fun exitIncognito() {
+        val session = incognitoSession ?: return
+        dismissKeyboard()
+        dismissWindowsDialog()
+        incognitoDownloadDialog?.dismiss()
+        releaseWebView()
+        incognitoSession = null
+        switchToSelectedWindow()
+        updateIncognitoAppearance()
+        session.profile.clear()
+    }
+
+    private fun updateIncognitoAppearance() {
+        val incognito = isIncognito
+        layout.incognitoBar.visibility = if (incognito) View.VISIBLE else View.GONE
+        layout.root.isSaveFromParentEnabled = !incognito
+        if (incognito) window.addFlags(FLAG_SECURE) else window.clearFlags(FLAG_SECURE)
+        with(searchPage.query) {
+            setHint(if (incognito) R.string.browser_incognito_search else R.string.start_search_hint)
+            imeOptions = if (incognito) {
+                imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+            } else {
+                imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING.inv()
+            }
+        }
+    }
+
+    private fun confirmIncognitoDownload(onConfirm: () -> Unit) {
+        incognitoDownloadDialog?.dismiss()
+        val dialog = BottomSheetDialog(this, R.string.browser_incognito_download)
+        dialog.addAction(R.string.cancel)
+        dialog.addAction(R.string.download_history_start, onClick = onConfirm)
+        incognitoDownloadDialog = dialog
+        dialog.setOnDismissListener { if (incognitoDownloadDialog === dialog) incognitoDownloadDialog = null }
+        dialog.show()
+    }
+
+    private fun dismissWindowsDialog() {
+        val dialog = windowsDialog
+        windowsDialog = null
+        dialog?.dismiss()
+    }
+
     private fun showWindows() {
         dismissKeyboard()
         clearExitConfirmation()
@@ -432,20 +525,31 @@ class MainActivity : Activity() {
                     if (windows.select(index)) switchToSelectedWindow()
                 }
             },
-            onClose = { index ->
-                if (windows.close(index)) switchToSelectedWindow() else updateWindowCount()
-            },
+            onClose = ::closeWindow,
             onAdd = {
                 rememberActiveWindow(saveHistory = true)
                 if (windows.add()) switchToSelectedWindow()
-            }
+            },
+            incognito = isIncognito
         ).also { dialog ->
             dialog.setOnDismissListener {
-                if (!dialog.isShowing && !isFinishing && !isDestroyed) restoreSelectedWindowIfNeeded()
+                if (windowsDialog === dialog && !dialog.isShowing && !isFinishing && !isDestroyed) {
+                    restoreSelectedWindowIfNeeded()
+                }
             }
             windowsDialog = dialog
         }
         dialog.show()
+    }
+
+    private fun closeWindow(index: Int) {
+        if (isIncognito && windows.items.size == 1 && index == 0) {
+            exitIncognito()
+        } else if (windows.close(index)) {
+            switchToSelectedWindow()
+        } else {
+            updateWindowCount()
+        }
     }
 
     private fun switchToSelectedWindow() {
@@ -512,7 +616,7 @@ class MainActivity : Activity() {
         val url = window.url
         if (url == null && history == null) return false
         window.history = null
-        val view = obtainWebView()
+        val view = obtainWebView() ?: return false
         val restored = history?.let(view::restoreState)?.currentItem
         if (restored != null) {
             updateAddress(restored.url)
@@ -557,7 +661,7 @@ class MainActivity : Activity() {
     }
 
     private fun enableWebDebugIfReady(view: WebView, url: String) {
-        if (webDebugEnabled && failedUrl == null && url == view.url) {
+        if (!isIncognito && webDebugEnabled && failedUrl == null && url == view.url) {
             Eruda.setEnabled(view, true)
         }
     }
@@ -634,8 +738,9 @@ class MainActivity : Activity() {
     }
 
     private fun refreshSearchHistory() {
-        val entries = searchHistory.entries()
+        val entries = if (isIncognito) emptyList() else searchHistory.entries()
         historyAdapter.replaceEntries(entries)
+        searchPage.emptyHistory.setText(if (isIncognito) R.string.browser_incognito_no_history else R.string.empty_search_history)
         searchPage.clearHistory.visibility = if (entries.isEmpty()) View.INVISIBLE else View.VISIBLE
     }
 
@@ -723,9 +828,11 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         downloads.onActivityResult(requestCode, resultCode, data)
         if (resultCode != RESULT_OK) return
+        if (!isIncognito && (requestCode == INCOGNITO_QR_REQUEST || requestCode == INCOGNITO_LIBRARY_REQUEST)) return
         when (requestCode) {
-            QR_REQUEST -> data?.getStringExtra(QrScanActivity.RESULT_CONTENT)?.takeUnless(String::isBlank)?.let(::showQrResult)
-            LIBRARY_REQUEST -> data?.getStringExtra(BrowserLibraryActivity.SELECTED_URL)
+            QR_REQUEST, INCOGNITO_QR_REQUEST -> data?.getStringExtra(QrScanActivity.RESULT_CONTENT)
+                ?.takeUnless(String::isBlank)?.let(::showQrResult)
+            LIBRARY_REQUEST, INCOGNITO_LIBRARY_REQUEST -> data?.getStringExtra(BrowserLibraryActivity.SELECTED_URL)
                 ?.takeIf(BrowserAddress::isWebUrl)?.let(::open)
         }
     }
@@ -755,7 +862,7 @@ class MainActivity : Activity() {
             }
             qrResultAction.setText(if (address != null) R.string.qr_visit_now else R.string.qr_search_now)
             qrResultAction.setOnClickListener {
-                if (address == null) searchHistory.record(content.trim())
+                if (address == null && !isIncognito) searchHistory.record(content.trim())
                 open(address ?: BrowserAddress.bingSearchUrl(content))
             }
         }
@@ -795,7 +902,9 @@ class MainActivity : Activity() {
             }
         }
         val pageTitle = if (isBrowser) webView?.title else null
-        title = pageTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
+        title = if (isIncognito) getString(R.string.browser_menu_incognito) else {
+            pageTitle?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
+        }
         updateBookmarkButton()
         updateWindowColors(page)
     }
@@ -823,7 +932,7 @@ class MainActivity : Activity() {
             searchPage.query.error = getString(R.string.invalid_search_input)
             return
         }
-        searchHistory.record(query)
+        if (!isIncognito) searchHistory.record(query)
         clearSearchInput()
         open(url)
     }
@@ -836,7 +945,10 @@ class MainActivity : Activity() {
     }
 
     private fun loadPage(url: String) {
-        val view = obtainWebView()
+        val view = obtainWebView() ?: run {
+            showStartPage()
+            return
+        }
         val saved = windows.selected.history
         windows.selected.history = null
         if (view.url == null && saved != null) view.restoreState(saved)
@@ -970,6 +1082,7 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         when {
+            activePage == Page.START && isIncognito -> exitIncognito()
             activePage == Page.START -> handleHomeBack()
             activePage == Page.SEARCH -> closeSearchPage()
             activePage == Page.QR_RESULT -> showStartPage()
@@ -1004,21 +1117,28 @@ class MainActivity : Activity() {
         super.onSaveInstanceState(outState)
         downloads.save(outState)
         pageQrShare.save(outState)
-        outState.putString(ACTIVE_PAGE, activePage.name)
-        outState.putBoolean(SEARCH_FROM_BROWSER, searchFromBrowser)
-        scannedContent?.let { outState.putString(QR_CONTENT, it) }
-        rememberActiveWindow(saveHistory = true)
-        outState.putBundle(BROWSER_WINDOWS_STATE, windows.save())
+        if (isIncognito) {
+            val regularPage = if (regularWindows.selected.home) Page.START else Page.BROWSER
+            outState.putString(ACTIVE_PAGE, regularPage.name)
+        } else {
+            outState.putString(ACTIVE_PAGE, activePage.name)
+            outState.putBoolean(SEARCH_FROM_BROWSER, searchFromBrowser)
+            scannedContent?.let { outState.putString(QR_CONTENT, it) }
+            rememberActiveWindow(saveHistory = true)
+        }
+        outState.putBundle(BROWSER_WINDOWS_STATE, regularWindows.save())
     }
 
     override fun onDestroy() {
         updates.close()
         menuDialog?.dismiss()
-        windowsDialog?.dismiss()
+        dismissWindowsDialog()
         bookmarkEditor?.dismiss()
         clearHistoryDialog?.dismiss()
+        incognitoDownloadDialog?.dismiss()
         pageQrShare.close()
         releaseWebView()
+        incognitoSession?.profile?.clear()
         super.onDestroy()
     }
 }
