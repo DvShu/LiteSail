@@ -16,6 +16,11 @@
         android:theme="@style/Theme.LiteSail"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".browser.BrowserLibraryActivity"
+            android:exported="false"
+            android:label="@string/browser_menu_library"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".browser.DownloadsActivity"
             android:exported="false"
             android:label="@string/browser_menu_downloads"

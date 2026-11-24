@@ -14,8 +14,7 @@
     <ImageButton
         android:id="@+id/back"
         style="@style/Widget.LiteSail.ToolbarButton"
-        android:contentDescription="@string/back"
-        android:enabled="false"
+        android:contentDescription="@string/browser_return_home"
         android:src="@drawable/ic_toolbar_back"
         android:visibility="gone" />
 
@@ -44,11 +43,12 @@
             android:id="@+id/windows"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/browser_toolbar_button_background"
             android:contentDescription="@string/browser_windows"
             android:padding="0dp"
             android:scaleType="center"
-            android:src="@drawable/ic_toolbar_window" />
+            android:src="@drawable/ic_toolbar_window"
+            android:tint="@color/browser_toolbar_button_icon" />
 
         <TextView
             android:id="@+id/window_count"
@@ -62,7 +62,7 @@
             android:gravity="center"
             android:importantForAccessibility="no"
             android:includeFontPadding="false"
-            android:textColor="@color/start_page_accent"
+            android:textColor="@color/start_page_brand_text"
             android:textSize="11sp" />
     </FrameLayout>
 

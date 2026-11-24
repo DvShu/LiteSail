@@ -14,7 +14,7 @@ internal class BrowserMenuDialog(
     private val onAdBlockingChanged: (Boolean) -> Unit,
     private val currentPageUrl: () -> String?,
     private val onPageQrCode: (String) -> Unit,
-    private val onBookmarks: () -> Unit,
+    private val onLibrary: () -> Unit,
     private val onDownloads: () -> Unit,
     private val onWindows: () -> Unit,
     private val onExit: () -> Unit
@@ -25,14 +25,15 @@ internal class BrowserMenuDialog(
         super.onCreate(savedInstanceState)
         binding = ViewBrowserMenuBinding.inflate(layoutInflater)
         setBody(binding.root)
+        binding.closeMenu.setOnClickListener { dismiss() }
         binding.exitBrowser.setOnClickListener { onExit() }
         binding.openDownloads.setOnClickListener {
             dismiss()
             onDownloads()
         }
-        binding.openBookmarks.setOnClickListener {
+        binding.openLibrary.setOnClickListener {
             dismiss()
-            onBookmarks()
+            onLibrary()
         }
         binding.openWindows.setOnClickListener {
             dismiss()

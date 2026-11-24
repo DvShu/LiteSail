@@ -33,6 +33,7 @@
     <string name="back">后退</string>
     <string name="forward">前进</string>
     <string name="home">首页</string>
+    <string name="browser_return_home">返回首页</string>
     <string name="browser_windows">窗口</string>
     <string name="browser_window_manager">窗口管理</string>
     <string name="browser_window_new">新建窗口</string>
@@ -83,7 +84,19 @@
     <string name="download_storage_directory">默认下载目录  Download/</string>
     <string name="download_storage_total">存储总容量 %1$s</string>
     <string name="download_storage_free">可用 %1$s</string>
-    <string name="browser_menu_library">书签</string>
+    <string name="browser_menu_library">收藏/历史</string>
+    <string name="browser_library_no_matches">未找到匹配的记录</string>
+    <string name="browser_history_tab">历史</string>
+    <string name="browser_history_search">搜索浏览历史</string>
+    <string name="browser_history_loading">正在读取浏览历史…</string>
+    <string name="browser_history_unavailable">无法读取浏览历史</string>
+    <string name="browser_history_empty">暂无浏览历史</string>
+    <string name="browser_history_today">今天</string>
+    <string name="browser_history_yesterday">昨天</string>
+    <string name="browser_history_confirm_clear">清空浏览历史？</string>
+    <string name="browser_history_clear_failed">无法清空浏览历史，请重试</string>
+    <string name="browser_bookmark_tab">收藏</string>
+    <string name="browser_bookmark_search">搜索收藏</string>
     <string name="browser_menu_incognito">无痕浏览</string>
     <string name="browser_menu_bookmark">收藏网址</string>
     <string name="browser_bookmark_saved">已收藏</string>
@@ -109,6 +122,7 @@
     <string name="browser_page_qr_storage_denied">保存二维码需要存储权限</string>
     <string name="browser_page_qr_code_too_long">网页地址过长，无法生成二维码。</string>
     <string name="browser_menu_share">分享网页</string>
+    <string name="browser_menu_close">收起菜单</string>
     <string name="refresh">刷新</string>
     <string name="browser_connection_encrypted">连接已加密（HTTPS）</string>
     <string name="browser_connection_unencrypted">连接未加密（HTTP）</string>

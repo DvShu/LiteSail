@@ -20,7 +20,7 @@ import android.widget.BaseAdapter
 import com.joel.litesail.R
 import com.joel.litesail.databinding.ActivityDownloadsBinding
 import com.joel.litesail.databinding.ItemBrowserDownloadBinding
-import com.joel.litesail.databinding.ItemDownloadDayBinding
+import com.joel.litesail.databinding.ItemListDateBinding
 import com.joel.litesail.databinding.ViewDownloadActionsBinding
 import com.joel.litesail.databinding.ViewDownloadClearBinding
 import com.joel.litesail.databinding.ViewDownloadUrlBinding
@@ -293,8 +293,8 @@ class DownloadsActivity : Activity() {
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = when (val row = getItem(position)) {
             is DownloadHistoryRow.Day -> {
-                val item = convertView?.let(ItemDownloadDayBinding::bind)
-                    ?: ItemDownloadDayBinding.inflate(layoutInflater, parent, false)
+                val item = convertView?.let(ItemListDateBinding::bind)
+                    ?: ItemListDateBinding.inflate(layoutInflater, parent, false)
                 item.root.text = dateFormat.format(row.date)
                 item.root
             }

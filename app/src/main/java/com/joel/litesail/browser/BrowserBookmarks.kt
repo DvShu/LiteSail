@@ -1,10 +1,12 @@
 package com.joel.litesail.browser
 
-import android.content.SharedPreferences
+import android.content.Context
 
 internal data class BrowserBookmark(val url: String, val title: String)
 
-internal class BrowserBookmarks(private val preferences: SharedPreferences) {
+internal class BrowserBookmarks(context: Context) {
+    private val preferences = context.getSharedPreferences("browser_bookmarks", Context.MODE_PRIVATE)
+
     fun entries(): List<BrowserBookmark> = preferences.all.mapNotNull { (url, title) ->
         if (title is String && BrowserAddress.isWebUrl(url)) BrowserBookmark(url, title) else null
     }.sortedWith(compareBy<BrowserBookmark, String>(String.CASE_INSENSITIVE_ORDER) { it.title }.thenBy { it.url })

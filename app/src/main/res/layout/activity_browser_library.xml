@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="64dp"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp">
+
+        <ImageButton
+            android:id="@+id/library_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_search_back" />
+
+        <RadioGroup
+            android:id="@+id/library_tabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="52dp"
+            android:background="@drawable/search_current_page_background"
+            android:checkedButton="@+id/library_history"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <RadioButton
+                android:id="@id/library_history"
+                style="@style/Widget.LiteSail.LibraryTab"
+                android:text="@string/browser_history_tab" />
+
+            <RadioButton
+                android:id="@+id/library_bookmarks"
+                style="@style/Widget.LiteSail.LibraryTab"
+                android:text="@string/browser_bookmark_tab" />
+        </RadioGroup>
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="8dp"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/library_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/search_current_page_background"
+            android:drawablePadding="10dp"
+            android:drawableStart="@drawable/ic_start_search"
+            android:hint="@string/browser_history_search"
+            android:imeOptions="actionSearch|flagNoExtractUi"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp"
+            android:singleLine="true"
+            android:textColor="@color/start_page_brand_text"
+            android:textColorHint="@color/start_page_search_text"
+            android:textSize="16sp" />
+
+        <ImageButton
+            android:id="@+id/clear_browsing_history"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/search_current_page_background"
+            android:contentDescription="@string/browser_history_confirm_clear"
+            android:enabled="false"
+            android:src="@drawable/ic_delete_history"
+            android:tint="@color/browser_toolbar_icon" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/library_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="6dp"
+            android:overScrollMode="ifContentScrolls"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="10dp" />
+
+        <TextView
+            android:id="@+id/library_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center"
+            android:paddingHorizontal="24dp"
+            android:text="@string/browser_history_loading"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="15sp" />
+    </FrameLayout>
+</LinearLayout>
