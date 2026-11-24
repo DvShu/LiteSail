@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/start_page_search_surface"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="60dp"
+        android:paddingHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/downloads_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_search_back" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="52dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingVertical="10dp"
+            android:text="@string/browser_menu_downloads"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="22sp" />
+
+        <ImageButton
+            android:id="@+id/downloads_more"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/download_history_actions"
+            android:src="@drawable/ic_toolbar_menu" />
+    </FrameLayout>
+
+    <EditText
+        android:id="@+id/download_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/search_current_page_background"
+        android:drawablePadding="10dp"
+        android:drawableStart="@drawable/ic_start_search"
+        android:hint="@string/download_history_search"
+        android:imeOptions="actionSearch|flagNoExtractUi"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:minHeight="48dp"
+        android:paddingHorizontal="16dp"
+        android:singleLine="true"
+        android:textColor="@color/start_page_brand_text"
+        android:textColorHint="@color/start_page_search_text"
+        android:textSize="16sp" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/download_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="@null"
+            android:overScrollMode="ifContentScrolls"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/download_list_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center"
+            android:paddingHorizontal="24dp"
+            android:text="@string/download_history_loading"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="15sp" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/storage_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/start_page_background"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="12dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/download_storage_directory"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="14sp" />
+
+        <ProgressBar
+            android:id="@+id/storage_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:max="100"
+            android:progressBackgroundTint="@color/start_page_search_border"
+            android:progressTint="@color/start_page_accent"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/storage_amounts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/storage_total"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/start_page_search_text"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/storage_free"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:textColor="@color/start_page_search_text"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

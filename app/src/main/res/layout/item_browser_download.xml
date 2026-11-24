@@ -2,28 +2,42 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/browser_address_background"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
-    android:minHeight="60dp"
-    android:orientation="vertical"
-    android:paddingHorizontal="14dp"
-    android:paddingVertical="8dp">
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingVertical="10dp">
 
-    <TextView
-        android:id="@+id/download_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:fontFamily="sans-serif-medium"
-        android:maxLines="2"
-        android:textColor="@color/start_page_brand_text"
-        android:textSize="15sp" />
+    <ImageView
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_marginEnd="12dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_menu_downloads" />
 
-    <TextView
-        android:id="@+id/download_details"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:textColor="@color/start_page_search_text"
-        android:textSize="12sp" />
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/download_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="middle"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/download_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="13sp" />
+    </LinearLayout>
 </LinearLayout>

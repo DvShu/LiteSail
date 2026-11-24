@@ -1,24 +1,21 @@
 package com.joel.litesail.browser
 
-import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.BaseAdapter
 import com.joel.litesail.R
 import com.joel.litesail.databinding.ItemBrowserBookmarkBinding
 import com.joel.litesail.databinding.ViewBrowserBookmarksBinding
+import com.joel.litesail.ui.BottomSheetDialog
 
 internal class BrowserBookmarksDialog(
     context: Context,
     private val bookmarks: BrowserBookmarks,
     private val onOpen: (String) -> Unit,
     private val onEdit: (BrowserBookmark) -> Unit
-) : Dialog(context, R.style.Theme_LiteSail_BrowserMenu) {
+) : BottomSheetDialog(context, R.string.browser_menu_library) {
     private var entries: List<BrowserBookmark> = emptyList()
 
     private val adapter = object : BaseAdapter() {
@@ -47,17 +44,9 @@ internal class BrowserBookmarksDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ViewBrowserBookmarksBinding.inflate(layoutInflater)
-        setTitle(R.string.browser_menu_library)
-        setContentView(binding.root)
-        setCanceledOnTouchOutside(true)
+        setBody(binding.root)
         binding.bookmarkList.emptyView = binding.emptyBookmarks
         binding.bookmarkList.adapter = adapter
-        binding.closeBookmarks.setOnClickListener { dismiss() }
-
-        window?.apply {
-            setGravity(Gravity.BOTTOM)
-            setLayout(MATCH_PARENT, WRAP_CONTENT)
-        }
     }
 
     override fun onStart() {

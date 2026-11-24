@@ -1,13 +1,10 @@
 package com.joel.litesail.browser
 
-import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import com.joel.litesail.R
 import com.joel.litesail.databinding.ViewBrowserMenuBinding
+import com.joel.litesail.ui.BottomSheetDialog
 
 internal class BrowserMenuDialog(
     context: Context,
@@ -20,21 +17,14 @@ internal class BrowserMenuDialog(
     private val onBookmarks: () -> Unit,
     private val onDownloads: () -> Unit,
     private val onWindows: () -> Unit,
-    private val onHome: () -> Unit,
     private val onExit: () -> Unit
-) : Dialog(context, R.style.Theme_LiteSail_BrowserMenu) {
+) : BottomSheetDialog(context, R.string.browser_menu) {
     private lateinit var binding: ViewBrowserMenuBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ViewBrowserMenuBinding.inflate(layoutInflater)
-        setTitle(R.string.browser_menu)
-        setContentView(binding.root)
-        setCanceledOnTouchOutside(true)
-        binding.returnHome.setOnClickListener {
-            dismiss()
-            onHome()
-        }
+        setBody(binding.root)
         binding.exitBrowser.setOnClickListener { onExit() }
         binding.openDownloads.setOnClickListener {
             dismiss()
@@ -52,11 +42,6 @@ internal class BrowserMenuDialog(
             val url = currentPageUrl() ?: return@setOnClickListener
             dismiss()
             onPageQrCode(url)
-        }
-
-        window?.apply {
-            setGravity(Gravity.BOTTOM)
-            setLayout(MATCH_PARENT, WRAP_CONTENT)
         }
     }
 

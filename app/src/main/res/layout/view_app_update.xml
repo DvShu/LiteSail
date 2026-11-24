@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:overScrollMode="ifContentScrolls">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:id="@+id/current_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="14sp"
+            tools:text="当前版本 0.4.0" />
+
+        <TextView
+            android:id="@+id/latest_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/start_page_accent"
+            android:textSize="16sp"
+            tools:text="最新版本 0.4.1" />
+
+        <TextView
+            android:id="@+id/release_notes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="15sp"
+            android:visibility="gone"
+            tools:text="优化浏览页菜单，改进按钮的状态显示。"
+            tools:visibility="visible" />
+    </LinearLayout>
+</ScrollView>

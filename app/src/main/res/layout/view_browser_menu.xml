@@ -2,11 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/browser_menu_surface"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingTop="14dp"
-    android:paddingBottom="18dp">
+    android:paddingHorizontal="20dp">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -15,97 +12,74 @@
         android:overScrollMode="ifContentScrolls"
         android:scrollbars="vertical">
 
-        <LinearLayout
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:columnCount="4"
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+            <Button
+                android:id="@+id/open_downloads"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
+                android:drawableTop="@drawable/ic_menu_downloads"
+                android:text="@string/browser_menu_downloads" />
 
-                <Button
-                    android:id="@+id/open_downloads"
-                    style="@style/Widget.LiteSail.BrowserMenuAction"
-                    android:drawableTop="@drawable/ic_menu_downloads"
-                    android:text="@string/browser_menu_downloads" />
+            <Button
+                android:id="@+id/open_bookmarks"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
+                android:drawableTop="@drawable/ic_menu_library"
+                android:text="@string/browser_menu_library" />
 
-                <Button
-                    android:id="@+id/open_bookmarks"
-                    style="@style/Widget.LiteSail.BrowserMenuAction"
-                    android:drawableTop="@drawable/ic_menu_library"
-                    android:text="@string/browser_menu_library" />
+            <Button
+                android:id="@+id/open_windows"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
+                android:drawableTop="@drawable/ic_toolbar_window"
+                android:text="@string/browser_windows" />
 
-                <Button
-                    android:id="@+id/open_windows"
-                    style="@style/Widget.LiteSail.BrowserMenuAction"
-                    android:drawableTop="@drawable/ic_toolbar_window"
-                    android:text="@string/browser_windows" />
-            </LinearLayout>
+            <TextView
+                style="@style/Widget.LiteSail.BrowserMenuItem"
+                android:drawableTint="@color/browser_toolbar_icon"
+                android:drawableTop="@drawable/ic_menu_incognito"
+                android:enabled="false"
+                android:text="@string/browser_menu_incognito" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+            <TextView
+                style="@style/Widget.LiteSail.BrowserMenuItem"
+                android:drawableTint="@color/browser_toolbar_icon"
+                android:drawableTop="@drawable/ic_menu_night_mode"
+                android:enabled="false"
+                android:text="@string/browser_menu_night_mode" />
 
-                <TextView
-                    style="@style/Widget.LiteSail.BrowserMenuItem"
-                    android:drawableTint="@color/browser_toolbar_icon"
-                    android:drawableTop="@drawable/ic_menu_incognito"
-                    android:enabled="false"
-                    android:text="@string/browser_menu_incognito" />
+            <Button
+                android:id="@+id/page_qr_code"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
+                android:drawableTint="@color/browser_toolbar_icon"
+                android:drawableTop="@drawable/ic_menu_qr_code"
+                android:enabled="false"
+                android:text="@string/browser_page_qr_code" />
 
-                <TextView
-                    style="@style/Widget.LiteSail.BrowserMenuItem"
-                    android:drawableTint="@color/browser_toolbar_icon"
-                    android:drawableTop="@drawable/ic_menu_night_mode"
-                    android:enabled="false"
-                    android:text="@string/browser_menu_night_mode" />
-
-                <Button
-                    android:id="@+id/page_qr_code"
-                    style="@style/Widget.LiteSail.BrowserMenuAction"
-                    android:drawableTint="@color/browser_toolbar_icon"
-                    android:drawableTop="@drawable/ic_menu_qr_code"
-                    android:enabled="false"
-                    android:text="@string/browser_page_qr_code" />
-            </LinearLayout>
-
-            <Switch
+            <ToggleButton
                 android:id="@+id/ad_block"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/browser_address_background"
-                android:minHeight="48dp"
-                android:paddingHorizontal="14dp"
-                android:text="@string/browser_menu_ad_block"
-                android:textColor="@color/start_page_brand_text"
-                android:textSize="14sp" />
+                style="@style/Widget.LiteSail.BrowserMenuToggle"
+                android:drawableTop="@drawable/ic_menu_ad_block"
+                android:textOff="@string/browser_menu_ad_block"
+                android:textOn="@string/browser_menu_ad_block" />
 
             <ToggleButton
                 android:id="@+id/web_debug"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/browser_menu_debug_background"
-                android:drawablePadding="10dp"
-                android:drawableStart="@drawable/ic_menu_debug"
-                android:gravity="start|center_vertical"
-                android:minHeight="48dp"
-                android:paddingHorizontal="14dp"
-                android:textAllCaps="false"
-                android:textColor="@color/start_page_brand_text"
+                style="@style/Widget.LiteSail.BrowserMenuToggle"
+                android:drawableTop="@drawable/ic_menu_debug"
                 android:textOff="@string/browser_menu_web_debug"
-                android:textOn="@string/browser_menu_web_debug"
-                android:textSize="14sp" />
-        </LinearLayout>
+                android:textOn="@string/browser_menu_web_debug" />
+
+            <Button
+                android:id="@+id/open_settings"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
+                android:drawableTint="@color/browser_toolbar_icon"
+                android:drawableTop="@drawable/ic_menu_settings"
+                android:enabled="false"
+                android:text="@string/browser_menu_settings" />
+        </GridLayout>
     </ScrollView>
 
     <View
@@ -132,18 +106,6 @@
             android:scaleType="center"
             android:src="@drawable/ic_menu_share"
             android:tint="@color/browser_toolbar_icon" />
-
-        <ImageButton
-            android:id="@+id/return_home"
-            android:layout_width="100dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:background="@drawable/browser_address_background"
-            android:contentDescription="@string/browser_menu_return_home"
-            android:padding="0dp"
-            android:scaleType="center"
-            android:src="@drawable/ic_toolbar_home"
-            android:tooltipText="@string/browser_menu_return_home" />
 
         <ImageButton
             android:id="@+id/exit_browser"

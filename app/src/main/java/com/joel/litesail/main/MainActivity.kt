@@ -2,14 +2,11 @@ package com.joel.litesail.main
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.Matrix
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -32,7 +29,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import android.widget.FrameLayout
-import com.google.zxing.WriterException
 import com.joel.litesail.R
 import com.joel.litesail.browser.BrowserAddress
 import com.joel.litesail.browser.BrowserBookmark
@@ -43,18 +39,19 @@ import com.joel.litesail.browser.BrowserMenuDialog
 import com.joel.litesail.browser.BrowserRequestFilter
 import com.joel.litesail.browser.BrowserWindows
 import com.joel.litesail.browser.BrowserWindowsDialog
+import com.joel.litesail.browser.DownloadsActivity
 import com.joel.litesail.browser.Eruda
-import com.joel.litesail.browser.WebPageQrCode
+import com.joel.litesail.browser.WebPageQrCodeShare
 import com.joel.litesail.databinding.ActivityMainBinding
 import com.joel.litesail.databinding.ViewBookmarkEditorBinding
 import com.joel.litesail.databinding.ViewBrowserBinding
 import com.joel.litesail.databinding.ViewQrResultBinding
 import com.joel.litesail.databinding.ViewSearchPageBinding
 import com.joel.litesail.databinding.ViewStartPageBinding
-import com.joel.litesail.databinding.ViewWebPageQrCodeBinding
 import com.joel.litesail.scan.ui.QrScanActivity
 import com.joel.litesail.search.SearchHistory
 import com.joel.litesail.search.SearchHistoryAdapter
+import com.joel.litesail.ui.BottomSheetDialog
 import com.joel.litesail.update.AppUpdates
 import java.text.NumberFormat
 
@@ -91,10 +88,11 @@ class MainActivity : Activity() {
     private val windows = BrowserWindows()
     private val downloads: BrowserDownloads = BrowserDownloads(this) { id -> updates.onDownloadQueued(id) }
     private val updates = AppUpdates(this, downloads)
+    private val pageQrShare = WebPageQrCodeShare(this)
     private val bookmarks by lazy { BrowserBookmarks(getSharedPreferences("browser_bookmarks", MODE_PRIVATE)) }
     private var windowsDialog: BrowserWindowsDialog? = null
     private var bookmarksDialog: BrowserBookmarksDialog? = null
-    private var bookmarkEditor: AlertDialog? = null
+    private var bookmarkEditor: BottomSheetDialog? = null
     private var webView: WebView? = null
     private var browserUrl: String? = null
     private var siteIcon: Bitmap? = null
@@ -103,7 +101,7 @@ class MainActivity : Activity() {
     private var failedUrl: String? = null
     private var scannedContent: String? = null
     private var menuDialog: BrowserMenuDialog? = null
-    private var pageQrDialog: AlertDialog? = null
+    private var clearHistoryDialog: BottomSheetDialog? = null
     private var exitConfirmationDeadline = 0L
     private val hideExitHint = Runnable { clearExitConfirmation() }
     private val browserPreferences by lazy { getSharedPreferences("browser_settings", MODE_PRIVATE) }
@@ -116,6 +114,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         downloads.restore(savedInstanceState)
+        pageQrShare.restore(savedInstanceState)
         layout = ActivityMainBinding.inflate(layoutInflater)
         binding = layout.browser
         startPage = layout.startPage
@@ -336,11 +335,10 @@ class MainActivity : Activity() {
                     browserPreferences.edit().putBoolean(AD_BLOCK_ENABLED, enabled).apply()
                 },
                 currentPageUrl = ::currentWebPageUrl,
-                onPageQrCode = ::showWebPageQrCode,
+                onPageQrCode = pageQrShare::show,
                 onBookmarks = ::showBookmarks,
-                onDownloads = downloads::show,
+                onDownloads = { startActivity(Intent(this@MainActivity, DownloadsActivity::class.java)) },
                 onWindows = ::showWindows,
-                onHome = ::showStartPage,
                 onExit = ::exitBrowser
             ).also { menuDialog = it }
             dialog.show()
@@ -374,23 +372,22 @@ class MainActivity : Activity() {
 
     private fun editBookmark(bookmark: BrowserBookmark) {
         bookmarkEditor?.dismiss()
-        val editorView = ViewBookmarkEditorBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(this, R.string.browser_bookmark_edit)
+        val editorView = ViewBookmarkEditorBinding.inflate(dialog.layoutInflater)
         editorView.bookmarkName.setText(bookmark.title)
         editorView.bookmarkAddress.text = bookmark.url
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.browser_bookmark_edit)
-            .setView(editorView.root)
-            .setPositiveButton(R.string.browser_bookmark_save) { _, _ ->
-                bookmarks.rename(bookmark.url, editorView.bookmarkName.text.toString())
-                refreshBookmarks()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .setNeutralButton(R.string.browser_bookmark_remove) { _, _ ->
-                bookmarks.remove(bookmark.url)
-                refreshBookmarks()
-                Toast.makeText(this, R.string.browser_bookmark_removed, Toast.LENGTH_SHORT).show()
-            }
-            .create()
+        dialog.setBody(editorView.root)
+        dialog.addAction(R.string.browser_bookmark_remove) {
+            bookmarks.remove(bookmark.url)
+            refreshBookmarks()
+            Toast.makeText(this, R.string.browser_bookmark_removed, Toast.LENGTH_SHORT).show()
+        }
+        dialog.addAction(R.string.cancel)
+        dialog.addAction(R.string.browser_bookmark_save) {
+            bookmarks.rename(bookmark.url, editorView.bookmarkName.text.toString())
+            refreshBookmarks()
+        }
+        editorView.bookmarkName.requestFocus()
         bookmarkEditor = dialog
         dialog.setOnDismissListener { if (bookmarkEditor === dialog) bookmarkEditor = null }
         dialog.show()
@@ -541,47 +538,6 @@ class MainActivity : Activity() {
         setLoading(false)
     }
 
-    private fun showWebPageQrCode(url: String) {
-        val builder = AlertDialog.Builder(this)
-            .setTitle(R.string.browser_page_qr_code)
-            .setPositiveButton(android.R.string.ok, null)
-        try {
-            val qr = WebPageQrCode.encode(url)
-            val pixels = IntArray(qr.width * qr.height)
-            for (y in 0 until qr.height) {
-                for (x in 0 until qr.width) {
-                    pixels[y * qr.width + x] = if (qr[x, y]) Color.BLACK else Color.WHITE
-                }
-            }
-            val bitmap = Bitmap.createBitmap(pixels, qr.width, qr.height, Bitmap.Config.ARGB_8888).apply {
-                density = Bitmap.DENSITY_NONE
-            }
-            val image = ViewWebPageQrCodeBinding.inflate(layoutInflater).root
-            image.setImageDrawable(BitmapDrawable(resources, bitmap).apply { isFilterBitmap = false })
-            image.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
-                val width = right - left - image.paddingLeft - image.paddingRight
-                val height = bottom - top - image.paddingTop - image.paddingBottom
-                val available = minOf(width, height)
-                if (available <= 0) return@addOnLayoutChangeListener
-                val size = WebPageQrCode.displaySize(qr.width, available)
-                val scale = size.toFloat() / qr.width
-                image.imageMatrix = Matrix().apply {
-                    setScale(scale, scale)
-                    postTranslate(((width - size) / 2).toFloat(), ((height - size) / 2).toFloat())
-                }
-            }
-            builder.setView(image)
-        } catch (_: WriterException) {
-            builder.setMessage(R.string.browser_page_qr_code_too_long)
-        }
-
-        pageQrDialog?.dismiss()
-        val dialog = builder.create()
-        dialog.setOnDismissListener { if (pageQrDialog === dialog) pageQrDialog = null }
-        pageQrDialog = dialog
-        dialog.show()
-    }
-
     private fun setWebDebugEnabled(enabled: Boolean) {
         browserPreferences.edit().putBoolean(WEB_DEBUG_ENABLED, enabled).apply()
         if (!enabled || (activePage == Page.BROWSER && failedUrl == null)) {
@@ -673,14 +629,17 @@ class MainActivity : Activity() {
     }
 
     private fun confirmClearSearchHistory() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.confirm_clear_search_history)
-            .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.clear_search_history) { _, _ ->
-                searchHistory.clear()
-                refreshSearchHistory()
-            }
-            .show()
+        clearHistoryDialog?.dismiss()
+        dismissKeyboard()
+        val dialog = BottomSheetDialog(this, R.string.confirm_clear_search_history)
+        dialog.addAction(R.string.cancel)
+        dialog.addAction(R.string.clear_search_history) {
+            searchHistory.clear()
+            refreshSearchHistory()
+        }
+        dialog.setOnDismissListener { if (clearHistoryDialog === dialog) clearHistoryDialog = null }
+        clearHistoryDialog = dialog
+        dialog.show()
     }
 
     private fun focusSearchInput() {
@@ -764,6 +723,7 @@ class MainActivity : Activity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         downloads.onRequestPermissionsResult(requestCode, grantResults)
+        pageQrShare.onRequestPermissionsResult(requestCode, grantResults)
     }
 
     private fun showQrResult(content: String) {
@@ -1030,6 +990,7 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         downloads.save(outState)
+        pageQrShare.save(outState)
         outState.putString(ACTIVE_PAGE, activePage.name)
         outState.putBoolean(SEARCH_FROM_BROWSER, searchFromBrowser)
         scannedContent?.let { outState.putString(QR_CONTENT, it) }
@@ -1039,12 +1000,12 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         updates.close()
-        downloads.dismiss()
         menuDialog?.dismiss()
         windowsDialog?.dismiss()
         bookmarkEditor?.dismiss()
         bookmarksDialog?.dismiss()
-        pageQrDialog?.dismiss()
+        clearHistoryDialog?.dismiss()
+        pageQrShare.close()
         releaseWebView()
         super.onDestroy()
     }

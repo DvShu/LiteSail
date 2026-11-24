@@ -16,6 +16,11 @@
         android:theme="@style/Theme.LiteSail"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".browser.DownloadsActivity"
+            android:exported="false"
+            android:label="@string/browser_menu_downloads"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".scan.ui.QrScanActivity"
             android:exported="false"
             android:theme="@style/Theme.LiteSail.Scanner" />

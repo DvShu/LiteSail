@@ -2,7 +2,6 @@ package com.joel.litesail.update
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -10,9 +9,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.view.View
 import android.widget.Toast
 import com.joel.litesail.R
 import com.joel.litesail.browser.BrowserDownloads
+import com.joel.litesail.databinding.ViewAppUpdateBinding
+import com.joel.litesail.ui.BottomSheetDialog
 import java.io.IOException
 import java.util.concurrent.Executors
 
@@ -25,7 +27,7 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
     private val downloadId get() = preferences.getLong(DOWNLOAD_ID, -1L)
     private var resumed = false
     private var availableUpdate: AppUpdate? = null
-    private var dialog: AlertDialog? = null
+    private var dialog: BottomSheetDialog? = null
 
     private val completionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -80,13 +82,25 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
     private fun showAvailableUpdate() {
         if (!resumed || activity.isFinishing) return
         val update = availableUpdate ?: return
+        val version = currentVersion ?: return
         availableUpdate = null
-        dialog = AlertDialog.Builder(activity)
-            .setTitle(R.string.app_update_title)
-            .setMessage(activity.getString(R.string.app_update_message, currentVersion, update.tag))
-            .setNegativeButton(R.string.app_update_later, null)
-            .setPositiveButton(R.string.app_update_download) { _, _ -> startDownload(update) }
-            .show()
+        val sheet = BottomSheetDialog(activity, R.string.app_update_title)
+        val content = ViewAppUpdateBinding.inflate(sheet.layoutInflater)
+        content.currentVersion.text = activity.getString(R.string.app_update_current_version, version.removePrefix("v"))
+        content.latestVersion.text = activity.getString(R.string.app_update_latest_version, update.versionName)
+        update.releaseNotes?.let { notes ->
+            content.releaseNotes.text = notes
+                .replace(RELEASE_NOTES_HEADING, "")
+                .replace(RELEASE_NOTES_BULLET, "$1• ")
+                .replace(RELEASE_NOTES_BOLD, "$1")
+            content.releaseNotes.visibility = View.VISIBLE
+        }
+        sheet.setBody(content.root)
+        sheet.addAction(R.string.app_update_later)
+        sheet.addAction(R.string.app_update_download) { startDownload(update) }
+        sheet.setOnDismissListener { if (dialog === sheet) dialog = null }
+        dialog = sheet
+        sheet.show()
     }
 
     private fun startDownload(update: AppUpdate) {
@@ -177,5 +191,8 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
         const val COMPLETION_PERMISSION = "android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS"
         const val DOWNLOAD_ID = "download_id"
         const val COMPLETION_HANDLED = "completion_handled"
+        val RELEASE_NOTES_HEADING = Regex("""(?m)^[ \t]{0,3}#{1,6}[ \t]+""")
+        val RELEASE_NOTES_BULLET = Regex("""(?m)^([ \t]*)[-+*][ \t]+""")
+        val RELEASE_NOTES_BOLD = Regex("""\*\*([^*\r\n]+)\*\*""")
     }
 }

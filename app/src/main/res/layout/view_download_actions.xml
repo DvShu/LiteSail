@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp">
+
+    <Button
+        android:id="@+id/new_download"
+        style="@style/Widget.LiteSail.DownloadAction"
+        android:text="@string/download_history_new" />
+
+    <Button
+        android:id="@+id/clear_completed"
+        style="@style/Widget.LiteSail.DownloadAction"
+        android:text="@string/download_history_clear_completed" />
+
+    <Button
+        android:id="@+id/clear_all"
+        style="@style/Widget.LiteSail.DownloadAction"
+        android:text="@string/download_history_clear_all" />
+
+    <Button
+        android:id="@+id/open_system_downloads"
+        style="@style/Widget.LiteSail.DownloadAction"
+        android:text="@string/download_history_system" />
+</LinearLayout>

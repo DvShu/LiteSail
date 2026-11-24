@@ -1,17 +1,14 @@
 package com.joel.litesail.browser
 
-import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.BaseAdapter
 import com.joel.litesail.R
 import com.joel.litesail.databinding.ItemBrowserWindowBinding
 import com.joel.litesail.databinding.ViewBrowserWindowsBinding
+import com.joel.litesail.ui.BottomSheetDialog
 
 internal class BrowserWindowsDialog(
     context: Context,
@@ -19,7 +16,7 @@ internal class BrowserWindowsDialog(
     private val onSelect: (Int) -> Unit,
     private val onClose: (Int) -> Unit,
     private val onAdd: () -> Unit
-) : Dialog(context, R.style.Theme_LiteSail_BrowserMenu) {
+) : BottomSheetDialog(context, R.string.browser_window_manager) {
     private lateinit var binding: ViewBrowserWindowsBinding
 
     private val adapter = object : BaseAdapter() {
@@ -67,18 +64,11 @@ internal class BrowserWindowsDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ViewBrowserWindowsBinding.inflate(layoutInflater)
-        setTitle(R.string.browser_window_manager)
-        setContentView(binding.root)
-        setCanceledOnTouchOutside(true)
+        setBody(binding.root)
         binding.windowList.adapter = adapter
-        binding.closeWindowManager.setOnClickListener { dismiss() }
         binding.addWindow.setOnClickListener {
             dismiss()
             onAdd()
-        }
-        window?.apply {
-            setGravity(Gravity.BOTTOM)
-            setLayout(MATCH_PARENT, WRAP_CONTENT)
         }
     }
 
@@ -90,7 +80,7 @@ internal class BrowserWindowsDialog(
 
     private fun refresh() {
         val count = windows.items.size
-        binding.windowLimit.text = context.getString(R.string.browser_window_count_limit, count, BrowserWindows.LIMIT)
+        setHeaderDetail(context.getString(R.string.browser_window_count_limit, count, BrowserWindows.LIMIT))
         binding.addWindow.isEnabled = count < BrowserWindows.LIMIT
         binding.addWindow.alpha = if (binding.addWindow.isEnabled) 1f else 0.5f
         adapter.notifyDataSetChanged()

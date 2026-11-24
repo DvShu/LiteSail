@@ -16,10 +16,12 @@ import android.provider.DocumentsContract
 import android.webkit.URLUtil
 import android.widget.Toast
 import com.joel.litesail.R
+import java.io.FileNotFoundException
+import java.io.IOException
 
 internal class BrowserDownloads(
     private val activity: Activity,
-    private val onUpdateQueued: (Long) -> Unit
+    private val onUpdateQueued: (Long) -> Unit = {}
 ) {
     private data class FileRequest(
         val url: Uri,
@@ -31,7 +33,7 @@ internal class BrowserDownloads(
 
     private var awaitingPermission: FileRequest? = null
     private val manager by lazy { activity.getSystemService(DownloadManager::class.java) }
-    private var historyDialog: BrowserDownloadHistoryDialog? = null
+    private val historyPreferences by lazy { activity.getSharedPreferences("download_history", Activity.MODE_PRIVATE) }
 
     fun start(url: String?, userAgent: String?, contentDisposition: String?, mimeType: String?) {
         val uri = url?.let(Uri::parse)?.normalizeScheme()
@@ -116,21 +118,9 @@ internal class BrowserDownloads(
         message(if (id >= 0L) R.string.download_queued else R.string.download_enqueue_failed)
     }
 
-    fun show() {
-        val dialog = historyDialog ?: BrowserDownloadHistoryDialog(
-            activity, ::queryHistory, ::openCompletedDownload, ::showSystemDownloads
-        ).also { historyDialog = it }
-        dialog.show()
-    }
-
-    fun dismiss() {
-        historyDialog?.dismiss()
-        historyDialog = null
-    }
-
-    private fun queryHistory(): List<BrowserDownloadRecord>? = try {
+    fun queryHistory(): List<BrowserDownloadRecord>? = try {
         // The public query is scoped to downloads enqueued by this app.
-        manager?.query(DownloadManager.Query())?.use { it.readDownloadRecords() }
+        manager?.query(DownloadManager.Query())?.use { visibleHistory(it.readDownloadRecords()) }
     } catch (_: SecurityException) {
         null
     } catch (_: IllegalStateException) {
@@ -139,7 +129,33 @@ internal class BrowserDownloads(
         null
     }
 
-    private fun openCompletedDownload(id: Long) {
+    fun visibleHistory(records: List<BrowserDownloadRecord>): List<BrowserDownloadRecord> {
+        val hidden = historyPreferences.getStringSet(HIDDEN_DOWNLOADS, emptySet()).orEmpty()
+        return records.filterNot { it.id.toString() in hidden }
+    }
+
+    fun clearHistory(records: List<BrowserDownloadRecord>) {
+        val hidden = historyPreferences.getStringSet(HIDDEN_DOWNLOADS, emptySet()).orEmpty()
+        // DownloadManager.remove also deletes files. Store the list preference separately.
+        historyPreferences.edit().putStringSet(HIDDEN_DOWNLOADS, hidden + records.map { it.id.toString() }).apply()
+    }
+
+    fun isFileMissing(id: Long): Boolean = try {
+        manager?.openDownloadedFile(id)?.close()
+        false
+    } catch (_: FileNotFoundException) {
+        true
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    } catch (_: IllegalStateException) {
+        false
+    } catch (_: IllegalArgumentException) {
+        false
+    }
+
+    fun openCompletedDownload(id: Long) {
         val opened = try {
             val file = manager?.getUriForDownloadedFile(id)
             if (file != null) openFile(file, manager?.getMimeTypeForDownloadedFile(id)) else false
@@ -194,6 +210,7 @@ internal class BrowserDownloads(
         const val STORAGE_REQUEST = 102
         const val OPEN_FILE_REQUEST = 103
         const val PENDING_DOWNLOAD = "pending_download"
+        const val HIDDEN_DOWNLOADS = "hidden_download_ids"
     }
 }
 
@@ -203,7 +220,8 @@ internal data class BrowserDownloadRecord(
     val status: Int,
     val downloadedBytes: Long,
     val totalBytes: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val fileMissing: Boolean = false
 ) {
     val isComplete get() = status == DownloadManager.STATUS_SUCCESSFUL
     val isActive get() = when (status) {

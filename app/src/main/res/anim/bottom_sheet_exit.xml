@@ -3,5 +3,5 @@
     android:duration="170"
     android:interpolator="@android:interpolator/fast_out_linear_in">
     <alpha android:fromAlpha="1" android:toAlpha="0" />
-    <translate android:fromYDelta="0%" android:toYDelta="20%" />
+    <translate android:fromYDelta="0%" android:toYDelta="100%" />
 </set>

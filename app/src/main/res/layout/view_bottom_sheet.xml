@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_surface"
+    android:orientation="vertical"
+    android:paddingTop="10dp"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingEnd="12dp">
+
+        <TextView
+            android:id="@+id/sheet_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/header_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/start_page_search_text"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/close_sheet"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/bottom_sheet_close"
+            android:scaleType="center"
+            android:src="@drawable/ic_close_window" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/sheet_body"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/sheet_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:visibility="gone" />
+</LinearLayout>
