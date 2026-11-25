@@ -2,6 +2,7 @@ package com.joel.litesail.browser
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,8 +21,8 @@ import com.joel.litesail.databinding.ActivityBrowserLibraryBinding
 import com.joel.litesail.databinding.ItemBrowserBookmarkBinding
 import com.joel.litesail.databinding.ItemBrowserVisitBinding
 import com.joel.litesail.databinding.ItemListDateBinding
+import com.joel.litesail.databinding.ViewLibrarySiteIconBinding
 import com.joel.litesail.ui.BottomSheetDialog
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -33,12 +34,14 @@ class BrowserLibraryActivity : Activity() {
     private lateinit var adapter: LibraryAdapter
     private val bookmarks by lazy { BrowserBookmarks(this) }
     private var savedPages = emptyList<BrowserBookmark>()
-    private var visits = emptyList<BrowserVisit>()
+    private var history: BrowserHistorySnapshot? = null
     private var historyEmptyMessage = R.string.browser_history_loading
     private var clearingHistory = false
     private var sheet: BottomSheetDialog? = null
+    private var faviconObserver: AutoCloseable? = null
 
     private val showingBookmarks get() = binding.libraryTabs.checkedRadioButtonId == R.id.library_bookmarks
+    private val visits get() = history?.visits.orEmpty()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,13 +94,20 @@ class BrowserLibraryActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        faviconObserver = bookmarks.observeFavicons { if (showingBookmarks) renderList() }
         refreshBookmarks()
-        BrowserHistory.read(this) { entries ->
+        BrowserHistory.read(this) { snapshot ->
             if (isFinishing || isDestroyed) return@read
-            visits = entries.orEmpty()
-            historyEmptyMessage = if (entries == null) R.string.browser_history_unavailable else R.string.browser_history_empty
+            history = snapshot
+            historyEmptyMessage = if (snapshot == null) R.string.browser_history_unavailable else R.string.browser_history_empty
             renderList()
         }
+    }
+
+    override fun onPause() {
+        faviconObserver?.close()
+        faviconObserver = null
+        super.onPause()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -151,7 +161,7 @@ class BrowserLibraryActivity : Activity() {
                 if (isFinishing || isDestroyed) return@clear
                 clearingHistory = false
                 if (cleared) {
-                    visits = emptyList()
+                    history = null
                     historyEmptyMessage = R.string.browser_history_empty
                 } else {
                     Toast.makeText(this, R.string.browser_history_clear_failed, Toast.LENGTH_SHORT).show()
@@ -173,6 +183,15 @@ class BrowserLibraryActivity : Activity() {
         getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(binding.root.windowToken, 0)
     }
 
+    private fun ViewLibrarySiteIconBinding.bindIcon(url: String, encoded: ByteArray?) {
+        val icon = encoded?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        siteFavicon.setImageBitmap(icon)
+        siteInitial.visibility = if (icon == null) View.VISIBLE else View.GONE
+        if (icon == null) {
+            siteInitial.text = Uri.parse(url).host?.removePrefix("www.")?.firstOrNull()?.uppercaseChar()?.toString()
+        }
+    }
+
     private inner class LibraryAdapter : BaseAdapter() {
         private var rows = emptyList<BrowserLibraryRow>()
         private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
@@ -180,7 +199,6 @@ class BrowserLibraryActivity : Activity() {
         private val timeFormat = android.text.format.DateFormat.getTimeFormat(this@BrowserLibraryActivity)
 
         fun replaceRows(newRows: List<BrowserLibraryRow>) {
-            if (rows == newRows) return
             rows = newRows
             notifyDataSetChanged()
         }
@@ -219,13 +237,14 @@ class BrowserLibraryActivity : Activity() {
                 item.visitTitle.text = visit.title
                 item.visitUrl.text = visit.url
                 item.visitTime.text = timeFormat.format(Date(visit.visitedAt))
-                item.visitIcon.text = Uri.parse(visit.url).host?.removePrefix("www.")?.firstOrNull()?.uppercaseChar()?.toString()
+                item.visitIcon.bindIcon(visit.url, history?.favicons?.get(visit.url))
                 item.root
             }
             is BrowserLibraryRow.Bookmark -> {
                 val item = convertView?.let(ItemBrowserBookmarkBinding::bind)
                     ?: ItemBrowserBookmarkBinding.inflate(layoutInflater, parent, false).also { it.root.clipToOutline = true }
                 val bookmark = row.entry
+                item.bookmarkIcon.bindIcon(bookmark.url, bookmarks.favicon(bookmark.url))
                 item.bookmarkTitle.text = bookmark.title
                 item.bookmarkAddress.text = bookmark.url
                 item.bookmarkAddress.visibility = if (bookmark.title == bookmark.url) View.GONE else View.VISIBLE
@@ -258,7 +277,7 @@ internal fun browserHistoryRows(
     var lastDay: LocalDate? = null
     for (visit in visits) {
         if (!matchesPage(visit.title, visit.url, query)) continue
-        val date = Instant.ofEpochMilli(visit.visitedAt).atZone(zone).toLocalDate()
+        val date = browserVisitDate(visit.visitedAt, zone)
         if (date != lastDay) add(BrowserLibraryRow.Day(date))
         add(BrowserLibraryRow.Visit(visit))
         lastDay = date

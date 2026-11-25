@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp">
+    android:paddingHorizontal="16dp">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -15,19 +15,19 @@
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="4"
+            android:columnCount="5"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/open_downloads"
                 style="@style/Widget.LiteSail.BrowserMenuAction"
-                android:drawableTop="@drawable/ic_menu_downloads"
+                android:drawableTop="@drawable/ic_browser_menu_downloads"
                 android:text="@string/browser_menu_downloads" />
 
             <Button
                 android:id="@+id/open_library"
                 style="@style/Widget.LiteSail.BrowserMenuAction"
-                android:drawableTop="@drawable/ic_menu_library"
+                android:drawableTop="@drawable/ic_browser_menu_library"
                 android:text="@string/browser_menu_library" />
 
             <Button
@@ -36,17 +36,16 @@
                 android:drawableTop="@drawable/ic_toolbar_window"
                 android:text="@string/browser_windows" />
 
-            <Button
+            <ToggleButton
                 android:id="@+id/toggle_incognito"
                 style="@style/Widget.LiteSail.BrowserMenuAction"
-                android:drawableTint="@color/browser_toolbar_icon"
                 android:drawableTop="@drawable/ic_menu_incognito"
                 android:enabled="false"
-                android:text="@string/browser_menu_incognito" />
+                android:textOff="@string/browser_menu_incognito"
+                android:textOn="@string/browser_incognito_exit" />
 
             <TextView
                 style="@style/Widget.LiteSail.BrowserMenuItem"
-                android:drawableTint="@color/browser_toolbar_icon"
                 android:drawableTop="@drawable/ic_menu_night_mode"
                 android:enabled="false"
                 android:text="@string/browser_menu_night_mode" />
@@ -54,21 +53,20 @@
             <Button
                 android:id="@+id/page_qr_code"
                 style="@style/Widget.LiteSail.BrowserMenuAction"
-                android:drawableTint="@color/browser_toolbar_icon"
                 android:drawableTop="@drawable/ic_menu_qr_code"
                 android:enabled="false"
                 android:text="@string/browser_page_qr_code" />
 
             <ToggleButton
                 android:id="@+id/ad_block"
-                style="@style/Widget.LiteSail.BrowserMenuToggle"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
                 android:drawableTop="@drawable/ic_menu_ad_block"
                 android:textOff="@string/browser_menu_ad_block"
                 android:textOn="@string/browser_menu_ad_block" />
 
             <ToggleButton
                 android:id="@+id/web_debug"
-                style="@style/Widget.LiteSail.BrowserMenuToggle"
+                style="@style/Widget.LiteSail.BrowserMenuAction"
                 android:drawableTop="@drawable/ic_menu_debug"
                 android:textOff="@string/browser_menu_web_debug"
                 android:textOn="@string/browser_menu_web_debug" />
@@ -76,7 +74,6 @@
             <Button
                 android:id="@+id/open_settings"
                 style="@style/Widget.LiteSail.BrowserMenuAction"
-                android:drawableTint="@color/browser_toolbar_icon"
                 android:drawableTop="@drawable/ic_menu_settings"
                 android:enabled="false"
                 android:text="@string/browser_menu_settings" />
@@ -97,16 +94,16 @@
         android:layout_marginTop="8dp">
 
         <ImageButton
+            android:id="@+id/share_page"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="start"
             android:background="@android:color/transparent"
             android:contentDescription="@string/browser_menu_share"
-            android:enabled="false"
             android:padding="0dp"
             android:scaleType="center"
             android:src="@drawable/ic_menu_share"
-            android:tint="@color/browser_toolbar_icon" />
+            android:tint="@color/browser_menu_foreground" />
 
         <ImageButton
             android:id="@+id/close_menu"
@@ -117,7 +114,8 @@
             android:contentDescription="@string/browser_menu_close"
             android:padding="0dp"
             android:scaleType="center"
-            android:src="@drawable/ic_menu_close" />
+            android:src="@drawable/ic_menu_close"
+            android:tint="@color/browser_menu_foreground" />
 
         <ImageButton
             android:id="@+id/exit_browser"
@@ -129,6 +127,7 @@
             android:padding="0dp"
             android:scaleType="center"
             android:src="@drawable/ic_menu_exit"
+            android:tint="@color/browser_menu_foreground"
             android:tooltipText="@string/browser_menu_exit" />
     </FrameLayout>
 </LinearLayout>

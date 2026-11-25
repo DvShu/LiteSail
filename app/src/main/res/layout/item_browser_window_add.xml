@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/add_window"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/window_card_height"
+    android:background="@drawable/window_card_surface"
+    android:clickable="true"
+    android:contentDescription="@string/browser_window_new"
+    android:defaultFocusHighlightEnabled="true"
+    android:focusable="true"
+    android:foreground="@drawable/window_card_outline"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <ImageView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/library_site_badge"
+        android:importantForAccessibility="no"
+        android:scaleType="center"
+        android:src="@drawable/ic_window_add" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:text="@string/browser_window_new"
+        android:textColor="@color/start_page_search_text"
+        android:textSize="16sp" />
+</LinearLayout>

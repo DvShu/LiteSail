@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:centerColor="@color/start_page_search_surface"
+        android:centerY="0.72"
+        android:endColor="@color/start_page_glow"
+        android:startColor="@color/start_page_search_surface" />
+</shape>

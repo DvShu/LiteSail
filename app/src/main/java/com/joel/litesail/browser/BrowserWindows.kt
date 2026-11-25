@@ -1,5 +1,6 @@
 package com.joel.litesail.browser
 
+import android.graphics.Bitmap
 import android.os.Bundle
 
 internal class BrowserWindows {
@@ -10,10 +11,30 @@ internal class BrowserWindows {
         var title: String? = null
             private set
         var history: Bundle? = null
+        var favicon: Bitmap? = null
+            private set
+        var preview: Bitmap? = null
 
         fun rememberAddress(url: String?, title: String?) {
-            this.url = url?.takeIf { it.length <= MAX_URL_LENGTH }
+            val address = url?.takeIf { it.length <= MAX_URL_LENGTH }
+            if (this.url != address) {
+                favicon = null
+                preview = null
+            }
+            this.url = address
             this.title = title?.take(MAX_TITLE_LENGTH)
+        }
+
+        fun rememberFavicon(icon: Bitmap) {
+            favicon = BrowserFavicon.thumbnail(icon)
+        }
+
+        fun clear() {
+            url = null
+            title = null
+            history = null
+            favicon = null
+            preview = null
         }
 
         fun save(): Bundle = Bundle().apply {
@@ -21,6 +42,7 @@ internal class BrowserWindows {
             putString("url", url)
             putString("title", title)
             putBundle("history", history)
+            putParcelable("favicon", favicon)
         }
     }
 
@@ -47,15 +69,18 @@ internal class BrowserWindows {
     fun close(index: Int): Boolean {
         if (index !in entries.indices) return false
         val closedActive = index == selectedIndex
-        entries.removeAt(index).apply {
-            // Rows waiting to be recycled can still refer to this window.
-            history = null
-            rememberAddress(null, null)
-        }
+        entries.removeAt(index).clear()
         if (entries.isEmpty()) entries.add(Window())
         if (index < selectedIndex) selectedIndex--
         selectedIndex = selectedIndex.coerceAtMost(entries.lastIndex)
         return closedActive
+    }
+
+    fun closeAll() {
+        entries.forEach(Window::clear)
+        entries.clear()
+        entries.add(Window())
+        selectedIndex = 0
     }
 
     fun save(): Bundle = Bundle().apply {
@@ -73,6 +98,7 @@ internal class BrowserWindows {
                 home = data.getBoolean("home", true)
                 rememberAddress(data.getString("url"), data.getString("title"))
                 history = data.getBundle("history")
+                data.getParcelable<Bitmap>("favicon")?.let(::rememberFavicon)
             })
         }
         selectedIndex = state.getInt("selected").coerceIn(entries.indices)

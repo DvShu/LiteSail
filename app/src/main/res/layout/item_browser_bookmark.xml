@@ -13,34 +13,45 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:background="?android:attr/selectableItemBackground"
+        android:baselineAligned="false"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:minHeight="56dp"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:paddingStart="14dp"
         android:paddingEnd="4dp"
         android:paddingVertical="6dp">
 
-        <TextView
-            android:id="@+id/bookmark_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:textColor="@color/start_page_brand_text"
-            android:textSize="15sp" />
+        <include
+            android:id="@+id/bookmark_icon"
+            layout="@layout/view_library_site_icon" />
 
-        <TextView
-            android:id="@+id/bookmark_address"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/start_page_search_text"
-            android:textDirection="ltr"
-            android:textSize="12sp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/bookmark_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:textColor="@color/start_page_brand_text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/bookmark_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/start_page_search_text"
+                android:textDirection="ltr"
+                android:textSize="12sp" />
+        </LinearLayout>
     </LinearLayout>
 
     <ImageButton

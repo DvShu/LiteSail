@@ -1,52 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/window_card"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/browser_window_row_background"
-    android:baselineAligned="false"
-    android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:layout_height="@dimen/window_card_height"
+    android:background="@drawable/window_card_surface"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="@drawable/window_card_outline"
+    android:orientation="vertical">
 
     <LinearLayout
-        android:id="@+id/window_details"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:minHeight="56dp"
-        android:orientation="vertical"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp">
+        android:minHeight="54dp"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="2dp">
+
+        <ImageView
+            android:id="@+id/window_favicon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter" />
 
         <TextView
             android:id="@+id/window_title"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
             android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="@color/start_page_brand_text"
             android:textSize="15sp" />
 
-        <TextView
-            android:id="@+id/window_address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/start_page_search_text"
-            android:textSize="12sp" />
+        <ImageButton
+            android:id="@+id/close_window"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/browser_window_close"
+            android:scaleType="center"
+            android:src="@drawable/ic_close_window" />
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/close_window"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/browser_window_close"
-        android:scaleType="center"
-        android:src="@drawable/ic_close_window" />
+    <FrameLayout
+        android:id="@+id/window_preview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:importantForAccessibility="noHideDescendants">
+
+        <ImageView
+            android:id="@+id/window_snapshot"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:id="@+id/window_preview_placeholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/window_preview_icon"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/window_preview_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:minHeight="30dp"
+                android:paddingHorizontal="8dp"
+                android:textColor="@color/start_page_search_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

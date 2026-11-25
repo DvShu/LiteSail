@@ -1,31 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="20dp">
+    android:layout_height="match_parent"
+    android:background="@drawable/window_manager_surface"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
 
-    <ListView
-        android:id="@+id/window_list"
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="64dp"
+        android:paddingHorizontal="10dp">
+
+        <ImageButton
+            android:id="@+id/window_manager_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_search_back" />
+
+        <TextView
+            android:id="@+id/window_manager_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="52dp"
+            android:accessibilityHeading="true"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="@string/browser_windows_page"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="23sp"
+            tools:targetApi="28" />
+
+        <ImageButton
+            android:id="@+id/close_all_windows"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/browser_window_close_all"
+            android:src="@drawable/ic_delete_history"
+            android:tint="@color/browser_toolbar_icon" />
+    </FrameLayout>
+
+    <GridView
+        android:id="@+id/window_grid"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="4dp"
+        android:clipToPadding="false"
+        android:horizontalSpacing="12dp"
         android:listSelector="@android:color/transparent"
-        android:overScrollMode="ifContentScrolls" />
+        android:numColumns="2"
+        android:overScrollMode="ifContentScrolls"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
+        android:saveEnabled="false"
+        android:stretchMode="columnWidth"
+        android:verticalSpacing="12dp" />
 
-    <Button
-        android:id="@+id/add_window"
-        android:layout_width="match_parent"
+    <RadioGroup
+        android:id="@+id/window_modes"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="4dp"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
-        android:background="@drawable/qr_result_action_background"
-        android:fontFamily="sans-serif-medium"
-        android:minHeight="48dp"
-        android:stateListAnimator="@null"
-        android:text="@string/browser_window_new"
-        android:textAllCaps="false"
-        android:textColor="@color/start_page_on_accent" />
+        android:layout_marginBottom="14dp"
+        android:background="@drawable/search_current_page_background"
+        android:orientation="horizontal"
+        android:saveEnabled="false"
+        android:padding="4dp">
+
+        <RadioButton
+            android:id="@+id/window_mode_regular"
+            style="@style/Widget.LiteSail.LibraryTab"
+            android:minWidth="100dp"
+            android:minHeight="48dp"
+            android:saveEnabled="false" />
+
+        <RadioButton
+            android:id="@+id/window_mode_incognito"
+            style="@style/Widget.LiteSail.LibraryTab"
+            android:drawablePadding="6dp"
+            android:drawableStart="@drawable/ic_menu_incognito"
+            android:drawableTint="@color/browser_toolbar_icon"
+            android:minWidth="94dp"
+            android:minHeight="48dp"
+            android:saveEnabled="false"
+            android:text="@string/browser_window_mode_incognito"
+            android:textColor="@color/browser_toolbar_icon" />
+    </RadioGroup>
 </LinearLayout>

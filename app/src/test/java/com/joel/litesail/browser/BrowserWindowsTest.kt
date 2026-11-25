@@ -62,6 +62,26 @@ class BrowserWindowsTest {
     }
 
     @Test
+    fun closingAllWindowsClearsAddressDataAndLeavesOneHomeWindow() {
+        val windows = BrowserWindows()
+        windows.selected.rememberAddress("https://example.org/first", "First")
+        assertTrue(windows.add())
+        windows.selected.rememberAddress("https://example.org/second", "Second")
+        val closed = windows.items.toList()
+
+        windows.closeAll()
+
+        assertEquals(1, windows.items.size)
+        assertEquals(0, windows.selectedIndex)
+        assertTrue(windows.selected.home)
+        assertNull(windows.selected.url)
+        closed.forEach {
+            assertNull(it.url)
+            assertNull(it.title)
+        }
+    }
+
+    @Test
     fun repeatedWindowOperationsKeepCountBoundedAndClearClosedRecords() {
         val windows = BrowserWindows()
         repeat(1_000) {

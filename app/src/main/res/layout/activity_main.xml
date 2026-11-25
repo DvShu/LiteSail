@@ -9,37 +9,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:id="@+id/incognito_bar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/start_page_brand_text"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="20dp"
-            android:paddingEnd="8dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/browser_menu_incognito"
-                android:textColor="@color/start_page_on_accent"
-                android:textSize="14sp" />
-
-            <Button
-                android:id="@+id/exit_incognito"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/browser_incognito_exit"
-                android:textAllCaps="false"
-                android:textColor="@color/start_page_on_accent" />
-        </LinearLayout>
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -91,6 +60,13 @@
     <include
         android:id="@+id/qr_result"
         layout="@layout/view_qr_result"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <include
+        android:id="@+id/window_manager"
+        layout="@layout/view_browser_windows"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone" />

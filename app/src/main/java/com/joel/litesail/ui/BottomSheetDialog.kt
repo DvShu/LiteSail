@@ -3,6 +3,7 @@ package com.joel.litesail.ui
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -38,6 +39,11 @@ internal open class BottomSheetDialog(
     override fun onStart() {
         super.onStart()
         hostWindow?.let { window?.setFlags(it.attributes.flags and FLAG_SECURE, FLAG_SECURE) }
+    }
+
+    protected fun setHeaderForeground(colors: ColorStateList) {
+        binding.sheetTitle.setTextColor(colors.defaultColor)
+        binding.closeSheet.imageTintList = colors
     }
 
     fun setBody(view: View) = with(binding.sheetBody) {

@@ -25,8 +25,10 @@ internal class BrowserMenuDialog(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setHeaderForeground(context.getColorStateList(R.color.browser_menu_foreground))
         binding = ViewBrowserMenuBinding.inflate(layoutInflater)
         setBody(binding.root)
+        binding.sharePage.isEnabled = false
         binding.closeMenu.setOnClickListener { dismiss() }
         binding.exitBrowser.setOnClickListener { onExit() }
         binding.openDownloads.setOnClickListener {
@@ -56,7 +58,7 @@ internal class BrowserMenuDialog(
         super.onStart()
         val incognito = isIncognito()
         binding.toggleIncognito.isEnabled = incognito || IncognitoProfile.isSupported
-        binding.toggleIncognito.setText(if (incognito) R.string.browser_incognito_exit else R.string.browser_menu_incognito)
+        binding.toggleIncognito.isChecked = incognito
         binding.pageQrCode.isEnabled = currentPageUrl() != null
         binding.webDebug.setOnCheckedChangeListener(null)
         binding.webDebug.isEnabled = !incognito
