@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LiteSail" parent="Theme.LiteSail.Base" />
+    <style name="Theme.LiteSail" parent="Theme.LiteSail.Teal" />
+
+    <style name="Theme.LiteSail.Teal" parent="Theme.LiteSail.Base">
+        <item name="liteSailAccent">@color/teal_accent</item>
+        <item name="liteSailOnAccent">@color/teal_on_accent</item>
+        <item name="liteSailAccentSurface">@color/teal_accent_surface</item>
+        <item name="liteSailAccentRipple">@color/teal_accent_ripple</item>
+    </style>
 
     <style name="Theme.LiteSail.Scanner" parent="Theme.LiteSail.Scanner.Base" />
 
-    <style name="Theme.LiteSail.BottomSheet" parent="android:style/Theme.Material.Light.Dialog.NoActionBar">
+    <style name="Theme.LiteSail.BottomSheet.Base" parent="android:style/Theme.Material.Light.Dialog.NoActionBar" />
+
+    <style name="Theme.LiteSail.BottomSheet" parent="Theme.LiteSail.BottomSheet.Base">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:backgroundDimAmount">0.48</item>
         <item name="android:windowAnimationStyle">@style/Animation.LiteSail.BottomSheet</item>
-        <item name="android:colorAccent">@color/start_page_accent</item>
+        <item name="android:colorAccent">?attr/liteSailAccent</item>
     </style>
 
     <style name="Animation.LiteSail.BottomSheet" parent="android:style/Animation">
@@ -18,7 +27,7 @@
         <item name="android:windowExitAnimation">@anim/bottom_sheet_exit</item>
     </style>
 
-    <style name="Theme.LiteSail.Scanner.Base" parent="Theme.LiteSail.Base">
+    <style name="Theme.LiteSail.Scanner.Base" parent="Theme.LiteSail.Teal">
         <item name="android:windowBackground">@color/scanner_background</item>
         <item name="android:statusBarColor">@color/scanner_background</item>
         <item name="android:navigationBarColor">@color/scanner_background</item>
@@ -26,12 +35,14 @@
     </style>
 
     <style name="Theme.LiteSail.Base" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:colorAccent">#176B73</item>
-        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:colorAccent">?attr/liteSailAccent</item>
+        <item name="android:windowBackground">@color/start_page_search_surface</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:statusBarColor">@color/start_page_search_surface</item>
         <item name="android:navigationBarColor">#000000</item>
     </style>
+
+    <bool name="lite_sail_light_system_bars">true</bool>
 
     <style name="Widget.LiteSail.StartShortcut" parent="android:style/Widget.Material.Button.Borderless">
         <item name="android:layout_width">0dp</item>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LiteSail.Base" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:colorAccent">?attr/liteSailAccent</item>
+        <item name="android:windowBackground">@color/start_page_search_surface</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/start_page_search_surface</item>
+        <item name="android:navigationBarColor">@color/start_page_search_surface</item>
+    </style>
+
+    <style name="Theme.LiteSail.BottomSheet.Base" parent="android:style/Theme.Material.Dialog.NoActionBar" />
+
+    <bool name="lite_sail_light_system_bars">false</bool>
+</resources>

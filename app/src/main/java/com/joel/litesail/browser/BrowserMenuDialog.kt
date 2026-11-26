@@ -8,12 +8,15 @@ import com.joel.litesail.ui.BottomSheetDialog
 
 internal class BrowserMenuDialog(
     context: Context,
+    private val isDarkMode: Boolean,
+    private val onSwitchDisplayMode: () -> Unit,
     private val isWebDebugEnabled: () -> Boolean,
     private val onWebDebugChanged: (Boolean) -> Unit,
     private val isAdBlockingEnabled: () -> Boolean,
     private val onAdBlockingChanged: (Boolean) -> Unit,
     private val currentPageUrl: () -> String?,
     private val onPageQrCode: (String) -> Unit,
+    private val onSharePage: (String) -> Unit,
     private val onLibrary: () -> Unit,
     private val onDownloads: () -> Unit,
     private val onWindows: () -> Unit,
@@ -28,9 +31,13 @@ internal class BrowserMenuDialog(
         setHeaderForeground(context.getColorStateList(R.color.browser_menu_foreground))
         binding = ViewBrowserMenuBinding.inflate(layoutInflater)
         setBody(binding.root)
-        binding.sharePage.isEnabled = false
         binding.closeMenu.setOnClickListener { dismiss() }
         binding.exitBrowser.setOnClickListener { onExit() }
+        binding.toggleNightMode.isChecked = isDarkMode
+        binding.toggleNightMode.setOnClickListener {
+            dismiss()
+            onSwitchDisplayMode()
+        }
         binding.openDownloads.setOnClickListener {
             dismiss()
             onDownloads()
@@ -52,6 +59,11 @@ internal class BrowserMenuDialog(
             dismiss()
             onPageQrCode(url)
         }
+        binding.sharePage.setOnClickListener {
+            val url = currentPageUrl() ?: return@setOnClickListener
+            dismiss()
+            onSharePage(url)
+        }
     }
 
     override fun onStart() {
@@ -59,7 +71,9 @@ internal class BrowserMenuDialog(
         val incognito = isIncognito()
         binding.toggleIncognito.isEnabled = incognito || IncognitoProfile.isSupported
         binding.toggleIncognito.isChecked = incognito
-        binding.pageQrCode.isEnabled = currentPageUrl() != null
+        val hasCurrentPage = currentPageUrl() != null
+        binding.pageQrCode.isEnabled = hasCurrentPage
+        binding.sharePage.isEnabled = hasCurrentPage
         binding.webDebug.setOnCheckedChangeListener(null)
         binding.webDebug.isEnabled = !incognito
         binding.webDebug.isChecked = !incognito && isWebDebugEnabled()

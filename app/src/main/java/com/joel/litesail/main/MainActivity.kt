@@ -1,7 +1,6 @@
 package com.joel.litesail.main
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -15,6 +14,7 @@ import android.os.Parcel
 import android.os.SystemClock
 import android.text.Selection
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -58,6 +58,7 @@ import com.joel.litesail.databinding.ViewSearchPageBinding
 import com.joel.litesail.databinding.ViewStartPageBinding
 import com.joel.litesail.scan.ui.QrScanActivity
 import com.joel.litesail.search.SearchHistory
+import com.joel.litesail.ui.AppearanceActivity
 import com.joel.litesail.search.SearchHistoryAdapter
 import com.joel.litesail.ui.BottomSheetDialog
 import com.joel.litesail.update.AppUpdates
@@ -83,10 +84,27 @@ private const val EXIT_CONFIRMATION_MS = 2_000L
 private const val EXIT_HINT_FADE_MS = 150L
 private val HTTP_PREFIX = Regex("^\\s*https?://", RegexOption.IGNORE_CASE)
 
-class MainActivity : Activity() {
+class MainActivity : AppearanceActivity() {
     private enum class Page { START, SEARCH, BROWSER, QR_RESULT }
-    private class IncognitoSession(val profile: IncognitoProfile) {
+    private class IncognitoSession {
         val windows = BrowserWindows()
+        private val profiles = mutableMapOf<BrowserWindows.Window, IncognitoProfile>()
+
+        fun attach(view: WebView): Boolean {
+            val profile = profiles.getOrPut(windows.selected) {
+                IncognitoProfile.create() ?: return false
+            }
+            return profile.attach(view)
+        }
+
+        fun clearProfile(window: BrowserWindows.Window) {
+            profiles.remove(window)?.clear()
+        }
+
+        fun clearProfiles() {
+            profiles.values.forEach(IncognitoProfile::clear)
+            profiles.clear()
+        }
     }
     private enum class ConnectionStatus(val icon: Int, val description: Int) {
         ENCRYPTED(R.drawable.ic_connection_encrypted, R.string.browser_connection_encrypted),
@@ -104,6 +122,7 @@ class MainActivity : Activity() {
     private var activePage = Page.START
     private val regularWindows = BrowserWindows()
     private var incognitoSession: IncognitoSession? = null
+    private var retainIncognitoOnRecreate = false
     private val isIncognito get() = incognitoSession != null
     private val windows get() = incognitoSession?.windows ?: regularWindows
     private val downloads: BrowserDownloads = BrowserDownloads(this) { id -> updates.onDownloadQueued(id) }
@@ -133,8 +152,10 @@ class MainActivity : Activity() {
     private val webDebugEnabled get() = browserPreferences.getBoolean(WEB_DEBUG_ENABLED, false)
     private val toolbar get() = layout.browserToolbar
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        incognitoSession = lastNonConfigurationInstance as? IncognitoSession
         downloads.restore(savedInstanceState)
         pageQrShare.restore(savedInstanceState)
         layout = ActivityMainBinding.inflate(layoutInflater)
@@ -142,6 +163,7 @@ class MainActivity : Activity() {
         startPage = layout.startPage
         searchPage = layout.searchPage
         qrResultPage = layout.qrResult
+        updateIncognitoAppearance()
         windowManager = BrowserWindowManager(
             layout.windowManager,
             onBack = ::hideWindows,
@@ -171,14 +193,18 @@ class MainActivity : Activity() {
         val windowState = savedInstanceState?.getBundle(BROWSER_WINDOWS_STATE)
         val savedBrowserUrl = savedInstanceState?.getString(BROWSER_URL)
         if (windowState != null) {
-            windows.restore(windowState)
+            regularWindows.restore(windowState)
         } else {
-            windows.selected.rememberAddress(savedBrowserUrl, null)
+            regularWindows.selected.rememberAddress(savedBrowserUrl, null)
         }
         val legacyBrowserVisible = savedInstanceState?.getBoolean(START_PAGE_VISIBLE, savedBrowserUrl == null) == false
         val pageName = savedInstanceState?.getString(ACTIVE_PAGE)
-        val page = Page.entries.firstOrNull { it.name == pageName }
-            ?: if (legacyBrowserVisible) Page.BROWSER else Page.START
+        val page = if (isIncognito) {
+            if (windows.selected.home) Page.START else Page.BROWSER
+        } else {
+            Page.entries.firstOrNull { it.name == pageName }
+                ?: if (legacyBrowserVisible) Page.BROWSER else Page.START
+        }
         val restoreBrowserSearch = page == Page.SEARCH && savedInstanceState?.getBoolean(SEARCH_FROM_BROWSER) == true
         val needsWebView = page == Page.BROWSER || restoreBrowserSearch
         val legacyState = savedInstanceState.takeIf { windowState == null }
@@ -198,10 +224,18 @@ class MainActivity : Activity() {
 
     private fun obtainWebView(): WebView? {
         webView?.let { return it }
-        return WebView(this).also { view ->
+        // Give each new WebView the selected scheme before restoring its navigation state.
+        val webContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val webTheme = if (isDarkMode) R.style.ThemeOverlay_LiteSail_WebView_Dark
+                else R.style.ThemeOverlay_LiteSail_WebView_Light
+            ContextThemeWrapper(this, webTheme)
+        } else {
+            this
+        }
+        return WebView(webContext).also { view ->
             val session = incognitoSession
             if (session != null) {
-                if (!session.profile.attach(view)) {
+                if (!session.attach(view)) {
                     view.destroy()
                     Toast.makeText(this, R.string.browser_incognito_open_failed, Toast.LENGTH_LONG).show()
                     return null
@@ -219,6 +253,8 @@ class MainActivity : Activity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView(view: WebView) = with(view) {
+        // Website styles control page colors. The WebView theme supplies prefers-color-scheme.
+        if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
         setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true)
         setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             if (view !== webView) return@setDownloadListener
@@ -398,6 +434,11 @@ class MainActivity : Activity() {
             clearExitConfirmation()
             val dialog = menuDialog ?: BrowserMenuDialog(
                 this@MainActivity,
+                isDarkMode = isDarkMode,
+                onSwitchDisplayMode = {
+                    retainIncognitoOnRecreate = isIncognito
+                    switchDisplayMode()
+                },
                 isWebDebugEnabled = { webDebugEnabled },
                 onWebDebugChanged = ::setWebDebugEnabled,
                 isAdBlockingEnabled = { requestFilter.adBlockingEnabled },
@@ -407,6 +448,7 @@ class MainActivity : Activity() {
                 },
                 currentPageUrl = ::currentWebPageUrl,
                 onPageQrCode = pageQrShare::show,
+                onSharePage = ::shareWebPage,
                 onLibrary = ::openLibrary,
                 onDownloads = ::openDownloads,
                 onWindows = ::showWindows,
@@ -441,6 +483,15 @@ class MainActivity : Activity() {
         return webView?.url?.takeIf {
             it == browserUrl && BrowserAddress.isWebScheme(Uri.parse(it).scheme)
         }
+    }
+
+    private fun shareWebPage(url: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+            currentWebTitle()?.let { putExtra(Intent.EXTRA_TITLE, it) }
+        }
+        startActivity(Intent.createChooser(shareIntent, null))
     }
 
     private fun recordBrowserVisit(view: WebView, url: String) {
@@ -500,15 +551,14 @@ class MainActivity : Activity() {
             exitIncognito()
             return
         }
-        val profile = IncognitoProfile.create()
-        if (profile == null) {
+        if (!IncognitoProfile.isSupported) {
             renderWindows()
             return
         }
         dismissKeyboard()
         rememberActiveWindow(saveHistory = true, capturePreview = !windowManager.isShowing)
         releaseWebView()
-        incognitoSession = IncognitoSession(profile)
+        incognitoSession = IncognitoSession()
         updateIncognitoAppearance()
         switchToSelectedWindow()
     }
@@ -519,9 +569,9 @@ class MainActivity : Activity() {
         incognitoDownloadDialog?.dismiss()
         releaseWebView()
         incognitoSession = null
+        session.clearProfiles()
         switchToSelectedWindow()
         updateIncognitoAppearance()
-        session.profile.clear()
     }
 
     private fun updateIncognitoAppearance() {
@@ -580,14 +630,20 @@ class MainActivity : Activity() {
     }
 
     private fun closeWindow(index: Int) {
-        if (isIncognito && windows.items.size == 1 && index == 0) {
+        val window = windows.items.getOrNull(index) ?: return
+        val session = incognitoSession
+        if (session != null && windows.items.size == 1) {
             exitIncognito()
-        } else if (windows.close(index)) {
+            return
+        }
+        val activeWindowChanged = windows.close(index)
+        if (activeWindowChanged) {
             switchToSelectedWindow()
         } else {
             updateWindowCount()
             renderWindows()
         }
+        session?.clearProfile(window)
     }
 
     private fun confirmCloseAllWindows() {
@@ -658,7 +714,11 @@ class MainActivity : Activity() {
         val window = windows.selected
         window.home = activePage != Page.BROWSER && !(activePage == Page.SEARCH && searchFromBrowser)
         val url = browserUrl ?: window.url
-        val title = if (view != null && failedUrl == null && view.url == url) view.title else window.title
+        val title = if (view != null && failedUrl == null && view.url == url) {
+            view.title
+        } else {
+            window.title.takeIf { window.url == url }
+        }
         window.rememberAddress(url, title)
         if (!window.home && view != null && failedUrl == null && window.url == url && view.url == url) {
             siteIcon?.let(window::rememberFavicon)
@@ -680,7 +740,7 @@ class MainActivity : Activity() {
         )
         return try {
             Canvas(preview).apply {
-                drawColor(Color.WHITE)
+                drawColor(getColor(R.color.start_page_search_surface))
                 scale(scale, scale)
                 view.draw(this)
             }
@@ -746,6 +806,7 @@ class MainActivity : Activity() {
         updateAddress(url)
         updateNavigationButtons()
         setLoading(false)
+        refreshManagedWindow()
     }
 
     private fun setWebDebugEnabled(enabled: Boolean) {
@@ -1027,12 +1088,15 @@ class MainActivity : Activity() {
             when {
                 managingWindows -> R.drawable.window_manager_surface
                 page == Page.START -> R.drawable.start_page_surface
-                page == Page.BROWSER -> android.R.color.white
+                page == Page.BROWSER -> R.color.start_page_search_surface
                 else -> R.color.start_page_background
             }
         )
         if (Build.VERSION.SDK_INT < 35) {
-            val background = if (managingWindows || page == Page.BROWSER) Color.WHITE else getColor(R.color.start_page_background)
+            val background = getColor(
+                if (managingWindows || page == Page.BROWSER) R.color.start_page_search_surface
+                else R.color.start_page_background
+            )
             window.statusBarColor = background
             window.navigationBarColor = when {
                 Build.VERSION.SDK_INT < 27 -> Color.BLACK
@@ -1269,6 +1333,14 @@ class MainActivity : Activity() {
         outState.putBundle(BROWSER_WINDOWS_STATE, regularWindows.save())
     }
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onRetainNonConfigurationInstance(): Any? {
+        val session = incognitoSession?.takeIf { retainIncognitoOnRecreate } ?: return null
+        rememberActiveWindow(saveHistory = true)
+        incognitoSession = null
+        return session
+    }
+
     override fun onDestroy() {
         updates.close()
         menuDialog?.dismiss()
@@ -1278,7 +1350,7 @@ class MainActivity : Activity() {
         incognitoDownloadDialog?.dismiss()
         pageQrShare.close()
         releaseWebView()
-        incognitoSession?.profile?.clear()
+        incognitoSession?.clearProfiles()
         super.onDestroy()
     }
 }

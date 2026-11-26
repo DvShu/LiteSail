@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="ThemeOverlay.LiteSail.WebView.Light" parent="">
+        <item name="android:isLightTheme">true</item>
+    </style>
+
+    <style name="ThemeOverlay.LiteSail.WebView.Dark" parent="">
+        <item name="android:isLightTheme">false</item>
+    </style>
+</resources>

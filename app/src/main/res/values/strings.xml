@@ -118,6 +118,7 @@
     <string name="browser_bookmark_save">保存</string>
     <string name="browser_bookmark_removed">已删除书签</string>
     <string name="browser_menu_night_mode">夜间模式</string>
+    <string name="browser_menu_light_mode">浅色模式</string>
     <string name="browser_menu_exit">退出</string>
     <string name="confirm_browser_exit">再按一次退出</string>
     <string name="browser_menu_web_debug">网页调试</string>

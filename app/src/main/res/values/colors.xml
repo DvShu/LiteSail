@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="start_page_background">#F3F8F5</color>
-    <color name="start_page_glow">#D8EEE5</color>
     <color name="start_page_brand_text">#143D3A</color>
     <color name="start_page_search_text">#315551</color>
     <color name="start_page_search_surface">#FFFFFF</color>
     <color name="start_page_search_border">#D5E5DE</color>
-    <color name="start_page_search_ripple">#30176B73</color>
-    <color name="start_page_accent">#176B73</color>
-    <color name="start_page_on_accent">#FFFFFF</color>
+    <color name="teal_accent">#176B73</color>
+    <color name="teal_on_accent">#FFFFFF</color>
+    <color name="teal_accent_surface">#D8EEE5</color>
+    <color name="teal_accent_ripple">#30176B73</color>
+    <color name="menu_foreground">#000000</color>
+    <color name="menu_disabled_foreground">#8C8C8C</color>
+    <color name="toolbar_disabled_foreground">#85908F</color>
+    <color name="connection_warning">#98500F</color>
     <color name="scanner_background">#101917</color>
     <color name="scanner_foreground">#FFFFFF</color>
     <color name="scanner_guide">#BFEEDC</color>

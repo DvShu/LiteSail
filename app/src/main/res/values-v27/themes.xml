@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LiteSail" parent="Theme.LiteSail.Base">
-        <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:navigationBarColor">#FFFFFF</item>
+    <style name="Theme.LiteSail" parent="Theme.LiteSail.Teal">
+        <item name="android:windowLightNavigationBar">@bool/lite_sail_light_system_bars</item>
+        <item name="android:navigationBarColor">@color/start_page_search_surface</item>
     </style>
 
     <style name="Theme.LiteSail.Scanner" parent="Theme.LiteSail.Scanner.Base">

@@ -1,6 +1,5 @@
 package com.joel.litesail.browser
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -22,6 +21,7 @@ import com.joel.litesail.databinding.ItemBrowserBookmarkBinding
 import com.joel.litesail.databinding.ItemBrowserVisitBinding
 import com.joel.litesail.databinding.ItemListDateBinding
 import com.joel.litesail.databinding.ViewLibrarySiteIconBinding
+import com.joel.litesail.ui.AppearanceActivity
 import com.joel.litesail.ui.BottomSheetDialog
 import java.time.LocalDate
 import java.time.ZoneId
@@ -29,7 +29,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
 
-class BrowserLibraryActivity : Activity() {
+class BrowserLibraryActivity : AppearanceActivity() {
     private lateinit var binding: ActivityBrowserLibraryBinding
     private lateinit var adapter: LibraryAdapter
     private val bookmarks by lazy { BrowserBookmarks(this) }

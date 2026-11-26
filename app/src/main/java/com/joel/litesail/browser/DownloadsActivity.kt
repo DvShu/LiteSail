@@ -1,6 +1,5 @@
 package com.joel.litesail.browser
 
-import android.app.Activity
 import android.app.DownloadManager
 import android.content.Intent
 import android.os.Build
@@ -24,6 +23,7 @@ import com.joel.litesail.databinding.ItemListDateBinding
 import com.joel.litesail.databinding.ViewDownloadActionsBinding
 import com.joel.litesail.databinding.ViewDownloadClearBinding
 import com.joel.litesail.databinding.ViewDownloadUrlBinding
+import com.joel.litesail.ui.AppearanceActivity
 import com.joel.litesail.ui.BottomSheetDialog
 import java.time.Instant
 import java.time.LocalDate
@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
-class DownloadsActivity : Activity() {
+class DownloadsActivity : AppearanceActivity() {
     private lateinit var binding: ActivityDownloadsBinding
     private lateinit var adapter: DownloadAdapter
     private val downloads = BrowserDownloads(this)

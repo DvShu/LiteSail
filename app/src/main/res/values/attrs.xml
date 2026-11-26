@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="liteSailAccent" format="color" />
+    <attr name="liteSailOnAccent" format="color" />
+    <attr name="liteSailAccentSurface" format="color" />
+    <attr name="liteSailAccentRipple" format="color" />
+</resources>

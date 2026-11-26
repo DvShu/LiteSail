@@ -5,7 +5,7 @@
     android:viewportWidth="14"
     android:viewportHeight="14">
     <path
-        android:fillColor="#98500F"
+        android:fillColor="@color/connection_warning"
         android:pathData="M7,0.6 A6.4,6.4 0,1 1,7 13.4 A6.4,6.4 0,1 1,7 0.6 Z"
         android:strokeColor="@color/start_page_search_surface"
         android:strokeWidth="1.2" />
