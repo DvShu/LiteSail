@@ -8,6 +8,14 @@
     android:orientation="horizontal"
     android:paddingVertical="10dp">
 
+    <CheckBox
+        android:id="@+id/download_check_box"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:focusable="false"
+        android:saveEnabled="false"
+        android:visibility="gone" />
+
     <ImageView
         android:layout_width="42dp"
         android:layout_height="42dp"

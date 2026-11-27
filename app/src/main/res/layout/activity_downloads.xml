@@ -7,6 +7,7 @@
     android:orientation="vertical">
 
     <FrameLayout
+        android:id="@+id/downloads_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="60dp"
@@ -34,34 +35,96 @@
             android:textSize="22sp" />
 
         <ImageButton
-            android:id="@+id/downloads_more"
+            android:id="@+id/downloads_edit"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="end|center_vertical"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/download_history_actions"
-            android:src="@drawable/ic_toolbar_menu" />
+            android:contentDescription="@string/download_history_edit"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_edit_page_link" />
     </FrameLayout>
 
-    <EditText
-        android:id="@+id/download_search"
+    <LinearLayout
+        android:id="@+id/downloads_selection_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:minHeight="60dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:visibility="gone">
+
+        <CheckBox
+            android:id="@+id/downloads_select_all"
+            android:layout_width="76dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/download_history_select_all"
+            android:saveEnabled="false" />
+
+        <TextView
+            android:id="@+id/downloads_selected_count"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:accessibilityLiveRegion="polite"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingVertical="10dp"
+            android:textColor="@color/start_page_brand_text"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/downloads_selection_done"
+            style="@style/Widget.LiteSail.DownloadAction"
+            android:layout_width="88dp"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:text="@string/download_history_selection_done" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/downloads_search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginBottom="12dp"
-        android:background="@drawable/search_current_page_background"
-        android:drawablePadding="10dp"
-        android:drawableStart="@drawable/ic_start_search"
-        android:hint="@string/download_history_search"
-        android:imeOptions="actionSearch|flagNoExtractUi"
-        android:importantForAutofill="no"
-        android:inputType="text"
-        android:minHeight="48dp"
-        android:paddingHorizontal="16dp"
-        android:singleLine="true"
-        android:textColor="@color/start_page_brand_text"
-        android:textColorHint="@color/start_page_search_text"
-        android:textSize="16sp" />
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/download_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/search_current_page_background"
+            android:drawablePadding="10dp"
+            android:drawableStart="@drawable/ic_start_search"
+            android:hint="@string/download_history_search"
+            android:imeOptions="actionSearch|flagNoExtractUi"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp"
+            android:singleLine="true"
+            android:textColor="@color/start_page_brand_text"
+            android:textColorHint="@color/start_page_search_text"
+            android:textSize="16sp" />
+
+        <ImageButton
+            android:id="@+id/downloads_more"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/download_history_actions"
+            android:src="@drawable/ic_toolbar_menu" />
+    </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -90,6 +153,32 @@
             android:textColor="@color/start_page_search_text"
             android:textSize="15sp" />
     </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/downloads_selection_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/browser_toolbar_background"
+        android:baselineAligned="false"
+        android:clipToOutline="true"
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/downloads_selection_delete"
+            style="@style/Widget.LiteSail.DownloadSelectionAction"
+            android:drawableTop="@drawable/ic_delete_history"
+            android:text="@string/download_history_delete" />
+
+        <Button
+            android:id="@+id/downloads_selection_more"
+            style="@style/Widget.LiteSail.DownloadSelectionAction"
+            android:drawableTop="@drawable/ic_more_vertical"
+            android:text="@string/download_history_more" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/storage_footer"

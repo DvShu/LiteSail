@@ -77,6 +77,15 @@
     <string name="download_history_search">搜索下载任务</string>
     <string name="download_history_no_matches">未找到匹配的下载任务</string>
     <string name="download_history_actions">下载操作</string>
+    <string name="download_history_edit">编辑下载记录</string>
+    <string name="download_history_select_all">全选</string>
+    <string name="download_history_deselect_all">取消全选</string>
+    <string name="download_history_selected_count">已选 %1$d 项</string>
+    <string name="download_history_selection_done">完成</string>
+    <string name="download_history_delete">删除</string>
+    <string name="download_history_delete_selected">删除所选下载记录</string>
+    <string name="download_history_more">更多</string>
+    <string name="download_history_open_file">打开文件</string>
     <string name="download_history_new">新建下载</string>
     <string name="download_history_url">输入下载链接</string>
     <string name="download_history_invalid_url">请输入有效的下载链接</string>

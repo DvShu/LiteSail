@@ -7,10 +7,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.view.View
 import android.widget.Toast
+import androidx.core.view.OneShotPreDrawListener
 import com.joel.litesail.R
 import com.joel.litesail.browser.BrowserDownloads
 import com.joel.litesail.databinding.ViewAppUpdateBinding
@@ -26,6 +28,8 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
     private val manager by lazy { activity.getSystemService(DownloadManager::class.java) }
     private val downloadId get() = preferences.getLong(DOWNLOAD_ID, -1L)
     private var resumed = false
+    private var versionLoaded = false
+    private var currentVersion: String? = null
     private var availableUpdate: AppUpdate? = null
     private var dialog: BottomSheetDialog? = null
 
@@ -38,12 +42,35 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
         }
     }
 
-    @Suppress("DEPRECATION")
-    private val currentVersion by lazy { activity.packageManager.getPackageInfo(activity.packageName, 0).versionName }
+    fun checkAfterFirstFrame(content: View) {
+        OneShotPreDrawListener.add(content) {
+            val check = Runnable {
+                if (!activity.isFinishing && !activity.isDestroyed) check()
+            }
+            if (content.isHardwareAccelerated) {
+                content.viewTreeObserver.registerFrameCommitCallback(check)
+            } else {
+                content.post(check)
+            }
+        }
+    }
 
-    fun check() {
-        val version = currentVersion ?: return
+    private fun check() {
         worker.execute {
+            val version = try {
+                activity.packageManager.getPackageInfo(
+                    activity.packageName, PackageManager.PackageInfoFlags.of(0)
+                ).versionName
+            } catch (_: PackageManager.NameNotFoundException) {
+                null
+            }
+            activity.runOnUiThread {
+                if (activity.isDestroyed || activity.isFinishing) return@runOnUiThread
+                currentVersion = version
+                versionLoaded = true
+                if (resumed) observeDownloadCompletion()
+            }
+            if (version == null) return@execute
             val update = GitHubUpdates.check(version) ?: return@execute
             activity.runOnUiThread {
                 if (activity.isDestroyed || activity.isFinishing) return@runOnUiThread
@@ -53,21 +80,25 @@ internal class AppUpdates(private val activity: Activity, private val downloads:
         }
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag") // Older Android versions use the sender permission alone.
     fun onResume() {
+        resumed = true
+        if (versionLoaded) observeDownloadCompletion()
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag") // Older Android versions use the sender permission alone.
+    private fun observeDownloadCompletion() {
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             activity.registerReceiver(completionReceiver, filter, COMPLETION_PERMISSION, null, Context.RECEIVER_EXPORTED)
         } else {
             activity.registerReceiver(completionReceiver, filter, COMPLETION_PERMISSION, null)
         }
-        resumed = true
         if (!checkDownloadCompletion()) showAvailableUpdate()
     }
 
     fun onPause() {
         resumed = false
-        activity.unregisterReceiver(completionReceiver)
+        if (versionLoaded) activity.unregisterReceiver(completionReceiver)
     }
 
     fun close() {

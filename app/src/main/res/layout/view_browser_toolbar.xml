@@ -2,36 +2,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_gravity="center_horizontal"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginTop="6dp"
-    android:layout_marginBottom="8dp"
     android:background="@drawable/browser_toolbar_background"
     android:baselineAligned="false"
     android:elevation="2dp"
     android:orientation="horizontal">
 
-    <ImageButton
-        android:id="@+id/back"
-        style="@style/Widget.LiteSail.ToolbarButton"
-        android:contentDescription="@string/back"
-        android:src="@drawable/ic_toolbar_back"
-        android:visibility="gone" />
-
-    <ImageButton
-        android:id="@+id/forward"
-        style="@style/Widget.LiteSail.ToolbarButton"
-        android:contentDescription="@string/forward"
-        android:enabled="false"
-        android:src="@drawable/ic_toolbar_forward"
-        android:visibility="gone" />
-
-    <ImageButton
-        android:id="@+id/home"
-        style="@style/Widget.LiteSail.ToolbarButton"
-        android:contentDescription="@string/home"
-        android:src="@drawable/ic_toolbar_home"
-        android:visibility="gone" />
+    <ViewStub
+        android:id="@+id/browser_navigation_stub"
+        android:layout="@layout/view_browser_navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="3" />
 
     <FrameLayout
         android:id="@+id/windows"

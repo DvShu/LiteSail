@@ -2,7 +2,6 @@ package com.joel.litesail.browser
 
 import android.app.DownloadManager
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -13,15 +12,19 @@ import android.text.format.Formatter
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.BaseAdapter
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import com.joel.litesail.R
 import com.joel.litesail.databinding.ActivityDownloadsBinding
 import com.joel.litesail.databinding.ItemBrowserDownloadBinding
 import com.joel.litesail.databinding.ItemListDateBinding
 import com.joel.litesail.databinding.ViewDownloadActionsBinding
 import com.joel.litesail.databinding.ViewDownloadClearBinding
+import com.joel.litesail.databinding.ViewDownloadSelectionMoreBinding
 import com.joel.litesail.databinding.ViewDownloadUrlBinding
 import com.joel.litesail.ui.AppearanceActivity
 import com.joel.litesail.ui.BottomSheetDialog
@@ -43,6 +46,9 @@ class DownloadsActivity : AppearanceActivity() {
     private var sheet: BottomSheetDialog? = null
     private var records = emptyList<BrowserDownloadRecord>()
     private var emptyMessage = R.string.download_history_loading
+    private val selectedIds = mutableSetOf<Long>()
+    private var isSelecting = false
+    private val selectionBack = OnBackInvokedCallback { setSelectionMode(false) }
     private val poll = Runnable { refresh(checkFiles = false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,19 +56,31 @@ class DownloadsActivity : AppearanceActivity() {
         downloads.restore(savedInstanceState)
         binding = ActivityDownloadsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        if (Build.VERSION.SDK_INT >= 30) {
-            binding.root.setOnApplyWindowInsetsListener { view, insets ->
-                if (Build.VERSION.SDK_INT >= 35) {
-                    val areas = WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout() or WindowInsets.Type.ime()
-                    val padding = insets.getInsets(areas)
-                    view.setPadding(padding.left, padding.top, padding.right, padding.bottom)
-                }
-                binding.storageFooter.visibility = if (insets.isVisible(WindowInsets.Type.ime())) View.GONE else View.VISIBLE
-                insets
-            }
+        binding.root.setOnApplyWindowInsetsListener { view, insets ->
+            val areas = WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout() or WindowInsets.Type.ime()
+            val padding = insets.getInsets(areas)
+            view.setPadding(padding.left, padding.top, padding.right, padding.bottom)
+            updateStorageVisibility(insets)
+            insets
         }
         binding.downloadsBack.setOnClickListener { finish() }
+        binding.downloadsEdit.setOnClickListener { setSelectionMode(true) }
         binding.downloadsMore.setOnClickListener { showActions() }
+        binding.downloadsSelectAll.setOnClickListener {
+            if (binding.downloadsSelectAll.isChecked) {
+                records.mapTo(selectedIds, BrowserDownloadRecord::id)
+            } else {
+                selectedIds.clear()
+            }
+            adapter.notifyDataSetChanged()
+            renderSelection()
+        }
+        binding.downloadsSelectionDone.setOnClickListener { setSelectionMode(false) }
+        binding.downloadsSelectionDelete.setOnClickListener {
+            val selection = records.filter { it.id in selectedIds }
+            confirmClear(R.string.download_history_delete_selected, R.string.download_history_delete) { selection }
+        }
+        binding.downloadsSelectionMore.setOnClickListener { showSelectionMore() }
         binding.downloadSearch.setOnEditorActionListener { _, action, _ ->
             if (action != EditorInfo.IME_ACTION_SEARCH) return@setOnEditorActionListener false
             hideKeyboard()
@@ -78,8 +96,16 @@ class DownloadsActivity : AppearanceActivity() {
         binding.downloadList.adapter = adapter
         binding.downloadList.setOnItemClickListener { _, _, position, _ ->
             val row = adapter.getItem(position) as? DownloadHistoryRow.Task ?: return@setOnItemClickListener
-            downloads.openCompletedDownload(row.record.id)
-            refresh()
+            if (isSelecting) {
+                toggleSelection(row.record.id)
+            } else {
+                downloads.openCompletedDownload(row.record.id)
+                refresh()
+            }
+        }
+        savedInstanceState?.getLongArray(STATE_SELECTION)?.let { ids ->
+            selectedIds.addAll(ids.asList())
+            setSelectionMode(true)
         }
     }
 
@@ -103,9 +129,11 @@ class DownloadsActivity : AppearanceActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         downloads.save(outState)
+        if (isSelecting) outState.putLongArray(STATE_SELECTION, selectedIds.toLongArray())
     }
 
     override fun onDestroy() {
+        if (isSelecting) onBackInvokedDispatcher.unregisterOnBackInvokedCallback(selectionBack)
         sheet?.dismiss()
         super.onDestroy()
     }
@@ -137,6 +165,7 @@ class DownloadsActivity : AppearanceActivity() {
                 if (worker !== activeWorker) return@post
                 emptyMessage = if (result == null) R.string.download_history_unavailable else R.string.download_history_empty
                 records = downloads.visibleHistory(result.orEmpty())
+                if (isSelecting && result != null) selectedIds.retainAll(records.mapTo(HashSet(), BrowserDownloadRecord::id))
                 renderList()
                 renderStorage(storage)
                 handler.removeCallbacks(poll)
@@ -145,12 +174,64 @@ class DownloadsActivity : AppearanceActivity() {
         }
     }
 
-    private fun renderList() {
-        val query = binding.downloadSearch.text.toString().trim()
+    private fun renderList(rebindRows: Boolean = false) {
+        val query = if (isSelecting) "" else binding.downloadSearch.text.toString().trim()
         val rows = downloadHistoryRows(records, query, getString(R.string.download_history_untitled))
         val message = if (records.isNotEmpty() && rows.isEmpty()) R.string.download_history_no_matches else emptyMessage
         binding.downloadListMessage.setText(message)
-        adapter.replaceRows(rows)
+        adapter.replaceRows(rows, rebindRows)
+        if (isSelecting) renderSelection()
+    }
+
+    private fun setSelectionMode(enabled: Boolean) {
+        if (isSelecting == enabled) return
+        isSelecting = enabled
+        if (enabled) {
+            hideKeyboard()
+            binding.downloadSearch.clearFocus()
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, selectionBack)
+        } else {
+            selectedIds.clear()
+            onBackInvokedDispatcher.unregisterOnBackInvokedCallback(selectionBack)
+        }
+        val normalVisibility = if (enabled) View.GONE else View.VISIBLE
+        binding.downloadsHeader.visibility = normalVisibility
+        binding.downloadsSearchBar.visibility = normalVisibility
+        val selectionVisibility = if (enabled) View.VISIBLE else View.GONE
+        binding.downloadsSelectionHeader.visibility = selectionVisibility
+        binding.downloadsSelectionActions.visibility = selectionVisibility
+        if (enabled) {
+            binding.downloadsSelectionActions.startAnimation(AnimationUtils.loadAnimation(this, R.anim.bottom_sheet_enter))
+        } else {
+            binding.downloadsSelectionActions.clearAnimation()
+        }
+        updateStorageVisibility(binding.root.rootWindowInsets)
+        renderList(rebindRows = true)
+    }
+
+    private fun toggleSelection(id: Long) {
+        if (!selectedIds.add(id)) selectedIds.remove(id)
+        adapter.notifyDataSetChanged()
+        renderSelection()
+    }
+
+    private fun renderSelection() {
+        binding.downloadsSelectedCount.text = getString(R.string.download_history_selected_count, selectedIds.size)
+        val hasRecords = records.isNotEmpty()
+        val allSelected = hasRecords && selectedIds.size == records.size
+        binding.downloadsSelectAll.isEnabled = hasRecords
+        binding.downloadsSelectAll.isChecked = allSelected
+        binding.downloadsSelectAll.contentDescription = getString(
+            if (allSelected) R.string.download_history_deselect_all else R.string.download_history_select_all
+        )
+        val hasSelection = hasRecords && selectedIds.isNotEmpty()
+        binding.downloadsSelectionDelete.isEnabled = hasSelection
+        binding.downloadsSelectionMore.isEnabled = hasSelection
+    }
+
+    private fun updateStorageVisibility(insets: WindowInsets?) {
+        val showStorage = !isSelecting && insets?.isVisible(WindowInsets.Type.ime()) != true
+        binding.storageFooter.visibility = if (showStorage) View.VISIBLE else View.GONE
     }
 
     private fun readStorage(): StorageUsage? = try {
@@ -182,9 +263,32 @@ class DownloadsActivity : AppearanceActivity() {
         val content = ViewDownloadActionsBinding.inflate(dialog.layoutInflater)
         content.newDownload.setOnClickListener { showNewDownload() }
         content.clearCompleted.isEnabled = records.any(BrowserDownloadRecord::isComplete)
-        content.clearCompleted.setOnClickListener { confirmClear(completedOnly = true) }
+        content.clearCompleted.setOnClickListener {
+            confirmClear(R.string.download_history_clear_completed) { records.filter(BrowserDownloadRecord::isComplete) }
+        }
         content.clearAll.isEnabled = records.isNotEmpty()
-        content.clearAll.setOnClickListener { confirmClear(completedOnly = false) }
+        content.clearAll.setOnClickListener { confirmClear(R.string.download_history_clear_all) { records } }
+        content.openSystemDownloads.setOnClickListener {
+            dialog.dismiss()
+            downloads.showSystemDownloads()
+        }
+        dialog.setBody(content.root)
+        showSheet(dialog)
+    }
+
+    private fun showSelectionMore() {
+        val selectedId = selectedIds.singleOrNull()
+        val file = records.firstOrNull { it.id == selectedId && it.isComplete && !it.fileMissing }
+        val dialog = BottomSheetDialog(this, R.string.download_history_more)
+        val content = ViewDownloadSelectionMoreBinding.inflate(dialog.layoutInflater)
+        content.openSelectedDownload.isEnabled = file != null
+        if (file != null) {
+            content.openSelectedDownload.setOnClickListener {
+                dialog.dismiss()
+                downloads.openCompletedDownload(file.id)
+                refresh()
+            }
+        }
         content.openSystemDownloads.setOnClickListener {
             dialog.dismiss()
             downloads.showSystemDownloads()
@@ -219,16 +323,18 @@ class DownloadsActivity : AppearanceActivity() {
         showSheet(dialog)
     }
 
-    private fun confirmClear(completedOnly: Boolean) {
-        val title = if (completedOnly) R.string.download_history_clear_completed else R.string.download_history_clear_all
+    private fun confirmClear(
+        title: Int,
+        action: Int = R.string.clear_search_history,
+        recordsToClear: () -> List<BrowserDownloadRecord>
+    ) {
         val dialog = BottomSheetDialog(this, title)
         dialog.setBody(ViewDownloadClearBinding.inflate(dialog.layoutInflater).root)
         dialog.addAction(R.string.cancel)
-        dialog.addAction(R.string.clear_search_history) {
-            val removed = if (completedOnly) records.filter(BrowserDownloadRecord::isComplete) else records
-            downloads.clearHistory(removed)
+        dialog.addAction(action) {
+            downloads.clearHistory(recordsToClear())
             records = downloads.visibleHistory(records)
-            renderList()
+            if (isSelecting) setSelectionMode(false) else renderList()
             refresh(checkFiles = false)
         }
         showSheet(dialog)
@@ -270,8 +376,8 @@ class DownloadsActivity : AppearanceActivity() {
         private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
             .withLocale(resources.configuration.locales[0])
 
-        fun replaceRows(newRows: List<DownloadHistoryRow>) {
-            if (rows == newRows) return
+        fun replaceRows(newRows: List<DownloadHistoryRow>, rebind: Boolean) {
+            if (!rebind && rows == newRows) return
             rows = newRows
             notifyDataSetChanged()
         }
@@ -288,7 +394,7 @@ class DownloadsActivity : AppearanceActivity() {
         override fun areAllItemsEnabled() = false
         override fun isEnabled(position: Int): Boolean {
             val record = (rows.getOrNull(position) as? DownloadHistoryRow.Task)?.record ?: return false
-            return record.isComplete && !record.fileMissing
+            return isSelecting || (record.isComplete && !record.fileMissing)
         }
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = when (val row = getItem(position)) {
@@ -304,12 +410,22 @@ class DownloadsActivity : AppearanceActivity() {
                 item.downloadTitle.text = row.record.title?.takeIf(String::isNotBlank)
                     ?: getString(R.string.download_history_untitled)
                 item.downloadDetails.text = statusText(row.record)
+                item.downloadCheckBox.visibility = if (isSelecting) View.VISIBLE else View.GONE
+                if (isSelecting) {
+                    item.downloadCheckBox.isChecked = row.record.id in selectedIds
+                    item.downloadCheckBox.contentDescription = item.downloadTitle.text
+                    item.downloadCheckBox.setOnClickListener { toggleSelection(row.record.id) }
+                }
                 item.root
             }
         }
     }
 
     private data class StorageUsage(val total: Long, val available: Long)
+
+    private companion object {
+        const val STATE_SELECTION = "download_selection"
+    }
 }
 
 internal sealed interface DownloadHistoryRow {

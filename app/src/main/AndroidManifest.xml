@@ -22,6 +22,7 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".browser.DownloadsActivity"
+            android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/browser_menu_downloads"
             android:windowSoftInputMode="adjustResize" />

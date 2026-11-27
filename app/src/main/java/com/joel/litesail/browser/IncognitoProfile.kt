@@ -1,6 +1,7 @@
 package com.joel.litesail.browser
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.webkit.WebView
 import androidx.webkit.Profile
 import androidx.webkit.ProfileStore
@@ -44,34 +45,59 @@ internal class IncognitoProfile private constructor() {
 
     companion object {
         private const val PROFILE_PREFIX = "litesail-incognito-"
-        private var startupCleanupAttempted = false
+        private const val CLEANUP_PENDING = "cleanup_pending"
+        private var previousSessionsCleanupAttempted = false
+        private var cleanupMarkedForProcess = false
 
         val isSupported: Boolean by lazy {
             WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) &&
                 WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA)
         }
 
-        fun create(): IncognitoProfile? {
+        fun create(context: Context): IncognitoProfile? {
             if (!isSupported) return null
-            clearPreviousSessions()
+            clearPreviousSessionsIfNeeded(context)
+            if (!cleanupMarkedForProcess) {
+                // Persist the marker before WebView can create a profile on disk.
+                if (!preferences(context).edit().putBoolean(CLEANUP_PENDING, true).commit()) return null
+                cleanupMarkedForProcess = true
+            }
             return IncognitoProfile()
         }
 
-        fun clearPreviousSessions() {
-            if (startupCleanupAttempted || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return
-            startupCleanupAttempted = true
-            ProfileStore.getInstance().allProfileNames.forEach { name ->
-                if (name.startsWith(PROFILE_PREFIX)) deleteProfile(name)
+        fun clearPreviousSessionsIfNeeded(context: Context) {
+            if (previousSessionsCleanupAttempted) return
+            previousSessionsCleanupAttempted = true
+            val preferences = preferences(context)
+            val cleanupPending = if (preferences.contains(CLEANUP_PENDING)) {
+                preferences.getBoolean(CLEANUP_PENDING, false)
+            } else {
+                // On upgrade, scan once for profiles written before we tracked pending cleanup.
+                @Suppress("DEPRECATION")
+                val info = context.packageManager.getPackageInfo(context.packageName, 0)
+                (info.firstInstallTime != info.lastUpdateTime).also { updated ->
+                    if (!updated) preferences.edit().putBoolean(CLEANUP_PENDING, false).apply()
+                }
+            }
+            if (!cleanupPending || !WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return
+
+            val store = ProfileStore.getInstance()
+            store.allProfileNames.filter { it.startsWith(PROFILE_PREFIX) }.forEach(::deleteProfile)
+            if (store.allProfileNames.none { it.startsWith(PROFILE_PREFIX) }) {
+                preferences.edit().putBoolean(CLEANUP_PENDING, false).apply()
             }
         }
+
+        private fun preferences(context: Context) =
+            context.getSharedPreferences("incognito_profiles", Context.MODE_PRIVATE)
 
         private fun deleteProfile(name: String) {
             try {
                 ProfileStore.getInstance().deleteProfile(name)
             } catch (_: IllegalStateException) {
-                // A profile loaded in this process can be removed on the next cold start.
+                // Retry after the process restarts and creates its first WebView.
             } catch (_: UnsupportedOperationException) {
-                // A WebView provider change can leave profiles for the next supported startup.
+                // Keep the profiles for the next WebView provider that supports deletion.
             }
         }
     }

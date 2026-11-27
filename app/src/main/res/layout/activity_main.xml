@@ -14,60 +14,61 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <include
-                android:id="@+id/browser"
-                layout="@layout/view_browser"
+            <ViewStub
+                android:id="@+id/browser_stub"
+                android:inflatedId="@+id/browser"
+                android:layout="@layout/view_browser"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone" />
+                android:layout_height="match_parent" />
 
-            <include
-                android:id="@+id/start_page"
-                layout="@layout/view_start_page" />
+            <ViewStub
+                android:id="@+id/start_page_stub"
+                android:inflatedId="@+id/start_page"
+                android:layout="@layout/view_start_page"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-            <TextView
-                android:id="@+id/exit_hint"
+            <ViewStub
+                android:id="@+id/exit_hint_stub"
+                android:inflatedId="@+id/exit_hint"
+                android:layout="@layout/view_exit_hint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginHorizontal="24dp"
-                android:layout_marginBottom="10dp"
-                android:accessibilityLiveRegion="polite"
-                android:background="@drawable/exit_hint_background"
-                android:elevation="3dp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:paddingHorizontal="20dp"
-                android:paddingVertical="12dp"
-                android:text="@string/confirm_browser_exit"
-                android:textColor="@color/start_page_on_accent"
-                android:textSize="14sp"
-                android:visibility="invisible" />
+                android:layout_marginBottom="10dp" />
         </FrameLayout>
 
-        <include
-            android:id="@+id/browser_toolbar"
-            layout="@layout/view_browser_toolbar" />
+        <ViewStub
+            android:id="@+id/browser_toolbar_stub"
+            android:inflatedId="@+id/browser_toolbar"
+            android:layout="@layout/view_browser_toolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="8dp" />
     </LinearLayout>
 
-    <include
-        android:id="@+id/search_page"
-        layout="@layout/view_search_page"
+    <ViewStub
+        android:id="@+id/search_page_stub"
+        android:inflatedId="@+id/search_page"
+        android:layout="@layout/view_search_page"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_height="match_parent" />
 
-    <include
-        android:id="@+id/qr_result"
-        layout="@layout/view_qr_result"
+    <ViewStub
+        android:id="@+id/qr_result_stub"
+        android:inflatedId="@+id/qr_result"
+        android:layout="@layout/view_qr_result"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_height="match_parent" />
 
-    <include
-        android:id="@+id/window_manager"
-        layout="@layout/view_browser_windows"
+    <ViewStub
+        android:id="@+id/window_manager_stub"
+        android:inflatedId="@+id/window_manager"
+        android:layout="@layout/view_browser_windows"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_height="match_parent" />
 </FrameLayout>

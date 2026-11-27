@@ -31,8 +31,10 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.Toast
 import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.Toast
+import androidx.viewbinding.ViewBinding
 import androidx.webkit.ScriptHandler
 import com.joel.litesail.R
 import com.joel.litesail.browser.BookmarkEditorDialog
@@ -53,6 +55,9 @@ import com.joel.litesail.browser.IncognitoProfile
 import com.joel.litesail.browser.WebPageQrCodeShare
 import com.joel.litesail.databinding.ActivityMainBinding
 import com.joel.litesail.databinding.ViewBrowserBinding
+import com.joel.litesail.databinding.ViewBrowserNavigationBinding
+import com.joel.litesail.databinding.ViewBrowserToolbarBinding
+import com.joel.litesail.databinding.ViewBrowserWindowsBinding
 import com.joel.litesail.databinding.ViewQrResultBinding
 import com.joel.litesail.databinding.ViewSearchPageBinding
 import com.joel.litesail.databinding.ViewStartPageBinding
@@ -92,7 +97,7 @@ class MainActivity : AppearanceActivity() {
 
         fun attach(view: WebView): Boolean {
             val profile = profiles.getOrPut(windows.selected) {
-                IncognitoProfile.create() ?: return false
+                IncognitoProfile.create(view.context) ?: return false
             }
             return profile.attach(view)
         }
@@ -112,12 +117,56 @@ class MainActivity : AppearanceActivity() {
     }
 
     private lateinit var layout: ActivityMainBinding
-    private lateinit var binding: ViewBrowserBinding
-    private lateinit var startPage: ViewStartPageBinding
-    private lateinit var searchPage: ViewSearchPageBinding
-    private lateinit var qrResultPage: ViewQrResultBinding
-    private lateinit var windowManager: BrowserWindowManager
-    private lateinit var searchHistory: SearchHistory
+    private val browserView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewBrowserBinding.bind(layout.browserStub.inflate()).also(::bindBrowserControls)
+    }
+    private val binding by browserView
+    private val startView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewStartPageBinding.bind(layout.startPageStub.inflate()).also(::bindStartControls)
+    }
+    private val searchView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewSearchPageBinding.bind(layout.searchPageStub.inflate()).also { search ->
+            search.root.applyWindowInsets(includeIme = true)
+            bindSearchControls(search)
+            updateSearchIncognitoAppearance(search)
+            search.currentPageIcon.setPageIcon(siteIcon)
+        }
+    }
+    private val searchPage by searchView
+    private val qrResultView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewQrResultBinding.bind(layout.qrResultStub.inflate()).also { result ->
+            result.root.applyWindowInsets()
+            result.closeQrResult.setOnClickListener { showStartPage() }
+        }
+    }
+    private val qrResultPage by qrResultView
+    private val toolbarView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewBrowserToolbarBinding.bind(layout.browserToolbarStub.inflate()).also(::bindToolbarControls)
+    }
+    private val toolbar by toolbarView
+    private val navigationView = lazy(LazyThreadSafetyMode.NONE) {
+        ViewBrowserNavigationBinding.bind(toolbar.browserNavigationStub.inflate()).also { navigation ->
+            navigation.back.setOnClickListener { goBackFromBrowserPage() }
+            navigation.forward.setOnClickListener { webView?.takeIf(WebView::canGoForward)?.goForward() }
+            navigation.home.setOnClickListener { showStartPage() }
+        }
+    }
+    private val windowsView = lazy(LazyThreadSafetyMode.NONE) {
+        val windows = ViewBrowserWindowsBinding.bind(layout.windowManagerStub.inflate())
+        windows.root.applyWindowInsets()
+        BrowserWindowManager(
+            windows,
+            onBack = ::hideWindows,
+            onSelect = ::selectWindow,
+            onClose = ::closeWindow,
+            onAdd = ::addWindow,
+            onCloseAll = ::confirmCloseAllWindows,
+            onModeChange = { incognito -> if (incognito != isIncognito) toggleIncognito() }
+        )
+    }
+    private val isWindowManagerShowing get() = windowsView.ifInitialized()?.isShowing == true
+    private val exitHint by lazy(LazyThreadSafetyMode.NONE) { layout.exitHintStub.inflate() }
+    private val searchHistory by lazy(LazyThreadSafetyMode.NONE) { SearchHistory(this) }
     private lateinit var historyAdapter: SearchHistoryAdapter
     private var activePage = Page.START
     private val regularWindows = BrowserWindows()
@@ -150,7 +199,6 @@ class MainActivity : AppearanceActivity() {
         BrowserRequestFilter(browserPreferences.getBoolean(AD_BLOCK_ENABLED, true))
     }
     private val webDebugEnabled get() = browserPreferences.getBoolean(WEB_DEBUG_ENABLED, false)
-    private val toolbar get() = layout.browserToolbar
 
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -159,37 +207,9 @@ class MainActivity : AppearanceActivity() {
         downloads.restore(savedInstanceState)
         pageQrShare.restore(savedInstanceState)
         layout = ActivityMainBinding.inflate(layoutInflater)
-        binding = layout.browser
-        startPage = layout.startPage
-        searchPage = layout.searchPage
-        qrResultPage = layout.qrResult
         updateIncognitoAppearance()
-        windowManager = BrowserWindowManager(
-            layout.windowManager,
-            onBack = ::hideWindows,
-            onSelect = ::selectWindow,
-            onClose = ::closeWindow,
-            onAdd = ::addWindow,
-            onCloseAll = ::confirmCloseAllWindows,
-            onModeChange = { incognito -> if (incognito != isIncognito) toggleIncognito() }
-        )
-        searchHistory = SearchHistory(this)
+        layout.browserShell.applyWindowInsets(includeIme = true)
         setContentView(layout.root)
-        if (Build.VERSION.SDK_INT >= 35) {
-            layout.root.setOnApplyWindowInsetsListener { _, insets ->
-                val systemAreas = WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
-                val systemArea = insets.getInsets(systemAreas)
-                val browserArea = insets.getInsets(systemAreas or WindowInsets.Type.ime())
-                layout.browserShell.setPadding(browserArea.left, browserArea.top, browserArea.right, browserArea.bottom)
-                searchPage.root.setPadding(browserArea.left, browserArea.top, browserArea.right, browserArea.bottom)
-                qrResultPage.root.setPadding(systemArea.left, systemArea.top, systemArea.right, systemArea.bottom)
-                layout.windowManager.root.setPadding(systemArea.left, systemArea.top, systemArea.right, systemArea.bottom)
-                insets
-            }
-        }
-        bindControls()
-        bindSearchControls()
-        qrResultPage.closeQrResult.setOnClickListener { showStartPage() }
         val windowState = savedInstanceState?.getBundle(BROWSER_WINDOWS_STATE)
         val savedBrowserUrl = savedInstanceState?.getString(BROWSER_URL)
         if (windowState != null) {
@@ -215,15 +235,31 @@ class MainActivity : AppearanceActivity() {
             Page.QR_RESULT -> savedInstanceState?.getString(QR_CONTENT)?.let(::showQrResult) ?: showStartPage()
             else -> showPage(page)
         }
-        updateWindowCount()
-        updateNavigationButtons()
         if (savedInstanceState?.getBoolean(WINDOW_MANAGER_VISIBLE) == true) showWindows()
-        layout.root.post { IncognitoProfile.clearPreviousSessions() }
-        updates.check()
+        updates.checkAfterFirstFrame(layout.root)
+    }
+
+    private fun View.applyWindowInsets(includeIme: Boolean = false) {
+        val systemTypes = WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+        val types = if (includeIme) systemTypes or WindowInsets.Type.ime() else systemTypes
+        setOnApplyWindowInsetsListener { view, insets ->
+            val padding = insets.getInsets(types)
+            view.setPadding(padding.left, padding.top, padding.right, padding.bottom)
+            insets
+        }
+        rootWindowInsets?.let(::dispatchApplyWindowInsets)
+        requestApplyInsets()
+    }
+
+    private fun <T> Lazy<T>.ifInitialized(): T? = if (isInitialized()) value else null
+
+    private fun Lazy<ViewBinding>.showWhen(visible: Boolean) {
+        if (visible) value.root.visibility = View.VISIBLE else ifInitialized()?.root?.visibility = View.GONE
     }
 
     private fun obtainWebView(): WebView? {
         webView?.let { return it }
+        IncognitoProfile.clearPreviousSessionsIfNeeded(this)
         // Give each new WebView the selected scheme before restoring its navigation state.
         val webContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val webTheme = if (isDarkMode) R.style.ThemeOverlay_LiteSail_WebView_Dark
@@ -363,7 +399,7 @@ class MainActivity : AppearanceActivity() {
                     updateAddressLabel(pageTitle)
                     updateBrowserVisitTitle(url, pageTitle)
                 }
-                if (!isIncognito && activePage == Page.BROWSER && !windowManager.isShowing) {
+                if (!isIncognito && activePage == Page.BROWSER && !isWindowManagerShowing) {
                     this@MainActivity.title = pageTitle ?: getString(R.string.app_name)
                 }
                 refreshCurrentPageCard()
@@ -400,17 +436,20 @@ class MainActivity : AppearanceActivity() {
     }
 
     @Suppress("DEPRECATION")
-    private fun bindControls() = with(binding) {
-        startPage.startSearchBox.clipToOutline = true
-        browserHeader.clipToOutline = true
-        startPage.search.setOnClickListener { showSearchPage() }
-        startPage.startLibrary.setOnClickListener { openLibrary() }
-        startPage.startDownloads.setOnClickListener { openDownloads() }
-        startPage.startBing.setOnClickListener { open(BrowserAddress.HOME) }
-        startPage.scanQr.setOnClickListener {
+    private fun bindStartControls(page: ViewStartPageBinding) = with(page) {
+        startSearchBox.clipToOutline = true
+        search.setOnClickListener { showSearchPage() }
+        startLibrary.setOnClickListener { openLibrary() }
+        startDownloads.setOnClickListener { openDownloads() }
+        startBing.setOnClickListener { open(BrowserAddress.HOME) }
+        scanQr.setOnClickListener {
             val request = if (isIncognito) INCOGNITO_QR_REQUEST else QR_REQUEST
             startActivityForResult(Intent(this@MainActivity, QrScanActivity::class.java), request)
         }
+    }
+
+    private fun bindBrowserControls(page: ViewBrowserBinding) = with(page) {
+        browserHeader.clipToOutline = true
         addressBar.setOnClickListener {
             clearSearchInput()
             showSearchPage(fromBrowser = true)
@@ -418,18 +457,20 @@ class MainActivity : AppearanceActivity() {
         bookmark.setOnClickListener {
             currentWebPageUrl()?.takeIf(BrowserAddress::isWebUrl)?.let(::bookmarkPage)
         }
-        toolbar.root.clipToOutline = true
-        toolbar.back.setOnClickListener { goBackFromBrowserPage() }
-        toolbar.forward.setOnClickListener { webView?.takeIf(WebView::canGoForward)?.goForward() }
-        toolbar.home.setOnClickListener { showStartPage() }
-        toolbar.windows.accessibilityDelegate = object : View.AccessibilityDelegate() {
+        retry.setOnClickListener { failedUrl?.let(::open) }
+        reload.setOnClickListener { failedUrl?.let(::open) ?: webView?.reload() }
+    }
+
+    private fun bindToolbarControls(controls: ViewBrowserToolbarBinding) = with(controls) {
+        root.clipToOutline = true
+        windows.accessibilityDelegate = object : View.AccessibilityDelegate() {
             override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
                 super.onInitializeAccessibilityNodeInfo(host, info)
                 info.className = Button::class.java.name
             }
         }
-        toolbar.windows.setOnClickListener { showWindows() }
-        toolbar.openMenu.setOnClickListener {
+        windows.setOnClickListener { showWindows() }
+        openMenu.setOnClickListener {
             dismissKeyboard()
             clearExitConfirmation()
             val dialog = menuDialog ?: BrowserMenuDialog(
@@ -456,14 +497,12 @@ class MainActivity : AppearanceActivity() {
                 onToggleIncognito = ::toggleIncognito,
                 onExit = ::exitBrowser
             ).also { created ->
-                created.setOnDismissListener { toolbar.openMenu.isActivated = created.isShowing }
+                created.setOnDismissListener { openMenu.isActivated = created.isShowing }
                 menuDialog = created
             }
             dialog.show()
-            toolbar.openMenu.isActivated = true
+            openMenu.isActivated = true
         }
-        retry.setOnClickListener { failedUrl?.let(::open) }
-        reload.setOnClickListener { failedUrl?.let(::open) ?: webView?.reload() }
     }
 
     @Suppress("DEPRECATION")
@@ -535,15 +574,16 @@ class MainActivity : AppearanceActivity() {
         dialog.show()
     }
 
-    private fun updateBookmarkButton() = with(binding.bookmark) {
+    private fun updateBookmarkButton() {
+        val button = browserView.ifInitialized()?.bookmark ?: return
         val url = currentWebPageUrl()?.takeIf(BrowserAddress::isWebUrl)
-        isEnabled = url != null
-        isSelected = url?.let(bookmarks::contains) == true
+        button.isEnabled = url != null
+        button.isSelected = url?.let(bookmarks::contains) == true
         val label = getString(
-            if (isSelected) R.string.browser_bookmark_edit else R.string.browser_menu_bookmark
+            if (button.isSelected) R.string.browser_bookmark_edit else R.string.browser_menu_bookmark
         )
-        contentDescription = label
-        tooltipText = label
+        button.contentDescription = label
+        button.tooltipText = label
     }
 
     private fun toggleIncognito() {
@@ -556,7 +596,7 @@ class MainActivity : AppearanceActivity() {
             return
         }
         dismissKeyboard()
-        rememberActiveWindow(saveHistory = true, capturePreview = !windowManager.isShowing)
+        rememberActiveWindow(saveHistory = true, capturePreview = !isWindowManagerShowing)
         releaseWebView()
         incognitoSession = IncognitoSession()
         updateIncognitoAppearance()
@@ -575,16 +615,17 @@ class MainActivity : AppearanceActivity() {
     }
 
     private fun updateIncognitoAppearance() {
-        val incognito = isIncognito
-        layout.root.isSaveFromParentEnabled = !incognito
-        if (incognito) window.addFlags(FLAG_SECURE) else window.clearFlags(FLAG_SECURE)
-        with(searchPage.query) {
-            setHint(if (incognito) R.string.browser_incognito_search else R.string.start_search_hint)
-            imeOptions = if (incognito) {
-                imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
-            } else {
-                imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING.inv()
-            }
+        layout.root.isSaveFromParentEnabled = !isIncognito
+        if (isIncognito) window.addFlags(FLAG_SECURE) else window.clearFlags(FLAG_SECURE)
+        searchView.ifInitialized()?.let(::updateSearchIncognitoAppearance)
+    }
+
+    private fun updateSearchIncognitoAppearance(search: ViewSearchPageBinding) = with(search.query) {
+        setHint(if (isIncognito) R.string.browser_incognito_search else R.string.start_search_hint)
+        imeOptions = if (isIncognito) {
+            imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+        } else {
+            imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING.inv()
         }
     }
 
@@ -599,17 +640,17 @@ class MainActivity : AppearanceActivity() {
     }
 
     private fun showWindows() {
-        if (windowManager.isShowing) return
+        if (isWindowManagerShowing) return
         dismissKeyboard()
         rememberActiveWindow(saveHistory = false, capturePreview = true)
-        windowManager.show()
+        windowsView.value.show()
         renderWindows()
         showPage(activePage)
     }
 
     private fun hideWindows() {
         closeWindowsDialog?.dismiss()
-        windowManager.hide()
+        windowsView.ifInitialized()?.hide()
         showPage(activePage)
         restoreSelectedWindowIfNeeded()
     }
@@ -664,12 +705,13 @@ class MainActivity : AppearanceActivity() {
     }
 
     private fun renderWindows() {
-        if (!windowManager.isShowing) return
-        windowManager.render(windows, regularWindows.items.size, isIncognito, isIncognito || IncognitoProfile.isSupported)
+        val manager = windowsView.ifInitialized() ?: return
+        if (!manager.isShowing) return
+        manager.render(windows, regularWindows.items.size, isIncognito, isIncognito || IncognitoProfile.isSupported)
     }
 
     private fun refreshManagedWindow() {
-        if (!windowManager.isShowing || activePage != Page.BROWSER) return
+        if (!isWindowManagerShowing || activePage != Page.BROWSER) return
         rememberActiveWindow(saveHistory = false)
         renderWindows()
     }
@@ -680,7 +722,7 @@ class MainActivity : AppearanceActivity() {
         failedUrl = null
         browserUrl = null
         updateAddressLabel()
-        binding.pageError.visibility = View.GONE
+        browserView.ifInitialized()?.pageError?.visibility = View.GONE
         setLoading(false)
         setSiteIcon(null)
         setConnectionStatus(null)
@@ -688,7 +730,7 @@ class MainActivity : AppearanceActivity() {
         if (!selected.home && (selected.url != null || selected.history != null)) {
             selected.url?.let(::updateAddress)
             showPage(Page.BROWSER)
-            if (!windowManager.isShowing) restoreSelectedWindowIfNeeded()
+            if (!isWindowManagerShowing) restoreSelectedWindowIfNeeded()
         } else {
             showPage(Page.START)
         }
@@ -703,10 +745,11 @@ class MainActivity : AppearanceActivity() {
         updateNavigationButtons()
     }
 
-    private fun updateWindowCount() = with(toolbar) {
-        val count = this@MainActivity.windows.items.size
-        windowCount.text = NumberFormat.getIntegerInstance(resources.configuration.locales[0]).format(count)
-        windows.contentDescription = getString(R.string.browser_window_count, count)
+    private fun updateWindowCount() {
+        val controls = toolbarView.ifInitialized() ?: return
+        val count = windows.items.size
+        controls.windowCount.text = NumberFormat.getIntegerInstance(resources.configuration.locales[0]).format(count)
+        controls.windows.contentDescription = getString(R.string.browser_window_count, count)
     }
 
     private fun rememberActiveWindow(saveHistory: Boolean, capturePreview: Boolean = false) {
@@ -831,7 +874,7 @@ class MainActivity : AppearanceActivity() {
         }
     }
 
-    private fun bindSearchControls() = with(searchPage) {
+    private fun bindSearchControls(page: ViewSearchPageBinding) = with(page) {
         closeSearch.setOnClickListener { closeSearchPage() }
         submitSearch.setOnClickListener { submitQuery(query.text.toString()) }
         copyPageLink.setOnClickListener {
@@ -874,8 +917,8 @@ class MainActivity : AppearanceActivity() {
 
     private fun showSearchPage(fromBrowser: Boolean = false) {
         searchFromBrowser = fromBrowser
-        refreshSearchHistory()
         showPage(Page.SEARCH)
+        refreshSearchHistory()
         refreshCurrentPageCard()
         focusSearchInput()
     }
@@ -886,9 +929,10 @@ class MainActivity : AppearanceActivity() {
         showPage(if (searchFromBrowser) Page.BROWSER else Page.START)
     }
 
-    private fun clearSearchInput() = with(searchPage.query) {
-        error = null
-        text.clear()
+    private fun clearSearchInput() {
+        val query = searchView.ifInitialized()?.query ?: return
+        query.error = null
+        query.text.clear()
     }
 
     private fun refreshCurrentPageCard() {
@@ -1047,7 +1091,7 @@ class MainActivity : AppearanceActivity() {
         activePage = page
         val isBrowser = page == Page.BROWSER
         val isStart = page == Page.START
-        val managingWindows = windowManager.isShowing
+        val managingWindows = isWindowManagerShowing
         if (page != Page.SEARCH) searchFromBrowser = false
         if (page != Page.QR_RESULT) scannedContent = null
         layout.browserShell.visibility = when {
@@ -1055,21 +1099,24 @@ class MainActivity : AppearanceActivity() {
             managingWindows -> View.INVISIBLE
             else -> View.VISIBLE
         }
-        startPage.root.visibility = if (isStart) View.VISIBLE else View.GONE
-        searchPage.root.visibility = if (page == Page.SEARCH) View.VISIBLE else View.GONE
-        qrResultPage.root.visibility = if (page == Page.QR_RESULT) View.VISIBLE else View.GONE
-        binding.root.visibility = if (isBrowser) View.VISIBLE else View.GONE
-        with(toolbar) {
-            val navigationVisibility = if (isBrowser) View.VISIBLE else View.GONE
-            back.visibility = navigationVisibility
-            forward.visibility = navigationVisibility
-            home.visibility = navigationVisibility
+        startView.showWhen(isStart)
+        searchView.showWhen(page == Page.SEARCH)
+        qrResultView.showWhen(page == Page.QR_RESULT)
+        browserView.showWhen(isBrowser)
+        navigationView.showWhen(isBrowser)
+        if (isStart || isBrowser) {
+            val controls = toolbar.root
             val toolbarWidth = if (isBrowser) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
-            val params = root.layoutParams
+            val params = controls.layoutParams
             if (params.width != toolbarWidth) {
                 params.width = toolbarWidth
-                root.layoutParams = params
+                controls.layoutParams = params
             }
+            updateWindowCount()
+        }
+        if (isBrowser) {
+            updateAddressLabel()
+            updateNavigationButtons()
         }
         val pageTitle = if (isBrowser) webView?.title else null
         title = when {
@@ -1083,7 +1130,7 @@ class MainActivity : AppearanceActivity() {
 
     @Suppress("DEPRECATION")
     private fun updateWindowColors(page: Page) {
-        val managingWindows = windowManager.isShowing
+        val managingWindows = isWindowManagerShowing
         window.setBackgroundDrawableResource(
             when {
                 managingWindows -> R.drawable.window_manager_surface
@@ -1169,8 +1216,9 @@ class MainActivity : AppearanceActivity() {
     }?.title?.takeIf(String::isNotBlank)
 
     private fun updateAddressLabel(pageTitle: String? = currentWebTitle()) {
+        val browser = browserView.ifInitialized() ?: return
         val label = pageTitle ?: browserUrl.orEmpty()
-        with(binding.address) {
+        with(browser.address) {
             textDirection = if (pageTitle == null) View.TEXT_DIRECTION_LTR else View.TEXT_DIRECTION_FIRST_STRONG
             if (text != label) text = label
         }
@@ -1195,9 +1243,10 @@ class MainActivity : AppearanceActivity() {
     private fun setConnectionStatus(status: ConnectionStatus?) {
         if (connectionStatus == status) return
         connectionStatus = status
-        binding.connectionBadge.visibility = if (status == null) View.GONE else View.VISIBLE
-        if (status != null) binding.connectionBadge.setImageResource(status.icon)
-        binding.addressBar.tooltipText = status?.let { getString(it.description) }
+        val browser = browserView.ifInitialized() ?: return
+        browser.connectionBadge.visibility = if (status == null) View.GONE else View.VISIBLE
+        if (status != null) browser.connectionBadge.setImageResource(status.icon)
+        browser.addressBar.tooltipText = status?.let { getString(it.description) }
         updateAddressDescription()
     }
 
@@ -1225,21 +1274,20 @@ class MainActivity : AppearanceActivity() {
     private fun setSiteIcon(icon: Bitmap?) {
         if (siteIcon === icon) return
         siteIcon = icon
-        if (icon == null) {
-            binding.addressIcon.setImageResource(R.drawable.ic_start_search)
-            searchPage.currentPageIcon.setImageResource(R.drawable.ic_start_search)
-        } else {
-            binding.addressIcon.setImageBitmap(icon)
-            searchPage.currentPageIcon.setImageBitmap(icon)
-        }
+        browserView.ifInitialized()?.addressIcon?.setPageIcon(icon)
+        searchView.ifInitialized()?.currentPageIcon?.setPageIcon(icon)
+    }
+
+    private fun ImageView.setPageIcon(icon: Bitmap?) {
+        if (icon == null) setImageResource(R.drawable.ic_start_search) else setImageBitmap(icon)
     }
 
     private fun updateNavigationButtons() {
-        toolbar.forward.isEnabled = webView?.canGoForward() == true
+        navigationView.ifInitialized()?.forward?.isEnabled = webView?.canGoForward() == true
     }
 
     private fun setLoading(active: Boolean) {
-        binding.progress.visibility = if (active) View.VISIBLE else View.INVISIBLE
+        browserView.ifInitialized()?.progress?.visibility = if (active) View.VISIBLE else View.INVISIBLE
     }
 
     private fun handleHomeBack() {
@@ -1249,7 +1297,7 @@ class MainActivity : AppearanceActivity() {
             return
         }
         exitConfirmationDeadline = now + EXIT_CONFIRMATION_MS
-        with(layout.exitHint) {
+        with(exitHint) {
             removeCallbacks(hideExitHint)
             if (visibility != View.VISIBLE) {
                 alpha = 0f
@@ -1263,7 +1311,7 @@ class MainActivity : AppearanceActivity() {
     private fun clearExitConfirmation() {
         if (exitConfirmationDeadline == 0L) return
         exitConfirmationDeadline = 0L
-        with(layout.exitHint) {
+        with(exitHint) {
             removeCallbacks(hideExitHint)
             animate().cancel()
             visibility = View.INVISIBLE
@@ -1285,7 +1333,7 @@ class MainActivity : AppearanceActivity() {
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         when {
-            windowManager.isShowing -> hideWindows()
+            isWindowManagerShowing -> hideWindows()
             activePage == Page.START && isIncognito -> exitIncognito()
             activePage == Page.START -> handleHomeBack()
             activePage == Page.SEARCH -> closeSearchPage()
@@ -1325,7 +1373,7 @@ class MainActivity : AppearanceActivity() {
             outState.putString(ACTIVE_PAGE, regularPage.name)
         } else {
             outState.putString(ACTIVE_PAGE, activePage.name)
-            outState.putBoolean(WINDOW_MANAGER_VISIBLE, windowManager.isShowing)
+            outState.putBoolean(WINDOW_MANAGER_VISIBLE, isWindowManagerShowing)
             outState.putBoolean(SEARCH_FROM_BROWSER, searchFromBrowser)
             scannedContent?.let { outState.putString(QR_CONTENT, it) }
             rememberActiveWindow(saveHistory = true)
